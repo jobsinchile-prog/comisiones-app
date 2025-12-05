@@ -287,6 +287,10 @@
       .total-value { font-size: 13px; }
       .total-label { font-size: 8px; }
       .totals-grid { gap: 6px; }
+      .modal-content {
+        padding: 16px;
+        max-width: 95%;
+      }
     }
   </style>
 </head>
@@ -347,10 +351,11 @@
   <div class="sales-list" id="salesMonth"></div>
 
   <div class="section-title">⚙️ Acciones</div>
-  <div class="btn-container">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0;">
     <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
     <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
-    <button class="btn btn-secondary" onclick="exportToExcel()">Exportar Excel</button>
+    <button class="btn btn-secondary" onclick="showExportModal()">Exportar Excel</button>
+    <button class="btn btn-accent" onclick="showModifyModal()">Modificar Ventas</button>
   </div>
 
   <div class="section-title">📜 Historial de Días Cerrados</div>
@@ -431,6 +436,45 @@
       <div class="modal-buttons">
         <button class="btn btn-accent" onclick="confirmExport()">📥 Exportar</button>
         <button class="btn btn-secondary" onclick="hideModal('exportModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modifyModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-title">✏️ Modificar Ventas</div>
+      
+      <div style="margin: 16px 0;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Acción:</label>
+        <select id="modifyAction" onchange="updateModifyAction()" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
+          <option value="add">➕ Agregar Venta</option>
+          <option value="delete">🗑️ Eliminar Venta</option>
+        </select>
+      </div>
+
+      <div id="addSaleSection" style="margin: 16px 0;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Fecha de la venta:</label>
+        <input type="date" id="saleDate" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Monto con IVA:</label>
+        <input type="text" id="saleAmount" placeholder="119000" inputmode="numeric" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
+      </div>
+
+      <div id="deleteSaleSection" style="margin: 16px 0; display: none;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Período:</label>
+        <select id="deletePeriod" onchange="updateDeleteList()" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+          <option value="day">Ventas del Día</option>
+          <option value="month">Ventas del Mes</option>
+        </select>
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Seleccionar venta a eliminar:</label>
+        <div id="salesListToDelete" style="max-height: 200px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px;">
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="confirmModify()">✓ Confirmar</button>
+        <button class="btn btn-secondary" onclick="hideModal('modifyModal')">✗ Cancelar</button>
       </div>
     </div>
   </div>
@@ -540,6 +584,26 @@
       const sign = num < 0 ? '-' : '';
       const abs = Math.abs(num);
       return `${sign}$ ${abs.toLocaleString('es-CL')}`;
+    }
+
+    function formatDateForExcel(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = String(date.getFullYear()).slice(-2);
+      return `${day}/${month}/${year}`;
+    }
+
+    function formatDateTimeForExcel(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = String(date.getFullYear()).slice(-2);
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
     }
 
     function parseAmount(str) {
@@ -850,8 +914,9 @@
       // Create CSV
       let csv = 'Fecha/Hora,Monto con IVA,Neto sin IVA,Comisión,Fecha,Mes\n';
       data.forEach(s => {
-        const timestamp = s.timestamp ? s.timestamp.substring(0, 19).replace('T', ' ') : '';
-        csv += `"${timestamp}",${s.amount_with_vat},${s.net_without_vat},${s.commission},"${s.date_iso || ''}","${s.month_id}"\n`;
+        const timestamp = formatDateTimeForExcel(s.timestamp);
+        const dateFormatted = formatDateForExcel(s.date_iso || s.timestamp);
+        csv += `"${timestamp}",${s.amount_with_vat},${s.net_without_vat},${s.commission},"${dateFormatted}","${s.month_id}"\n`;
       });
       
       // Download
@@ -871,7 +936,203 @@
       if (exportTypeSelect) {
         exportTypeSelect.addEventListener('change', updateExportOptions);
       }
+      
+      // Set today as default date for add sale
+      const saleDateInput = document.getElementById('saleDate');
+      if (saleDateInput) {
+        saleDateInput.value = getCurrentDate();
+      }
+      
+      // Format amount input in modify modal
+      const saleAmountInput = document.getElementById('saleAmount');
+      if (saleAmountInput) {
+        saleAmountInput.addEventListener('input', (e) => {
+          let value = e.target.value.replace(/[^0-9]/g, '');
+          if (value) {
+            const cursorPos = e.target.selectionStart;
+            const oldLength = e.target.value.length;
+            const num = parseInt(value);
+            const formatted = '$ ' + num.toLocaleString('es-CL');
+            e.target.value = formatted;
+            const newLength = formatted.length;
+            const diff = newLength - oldLength;
+            e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+          }
+        });
+      }
     });
+
+    function showExportModal() {
+      showModal('exportModal');
+      updateExportOptions();
+    }
+
+    function showModifyModal() {
+      showModal('modifyModal');
+      document.getElementById('saleDate').value = getCurrentDate();
+      document.getElementById('saleAmount').value = '';
+      updateModifyAction();
+    }
+
+    function updateModifyAction() {
+      const action = document.getElementById('modifyAction').value;
+      const addSection = document.getElementById('addSaleSection');
+      const deleteSection = document.getElementById('deleteSaleSection');
+      
+      if (action === 'add') {
+        addSection.style.display = 'block';
+        deleteSection.style.display = 'none';
+      } else {
+        addSection.style.display = 'none';
+        deleteSection.style.display = 'block';
+        updateDeleteList();
+      }
+    }
+
+    function updateDeleteList() {
+      const period = document.getElementById('deletePeriod').value;
+      const container = document.getElementById('salesListToDelete');
+      container.innerHTML = '';
+      
+      let sales = [];
+      if (period === 'day') {
+        sales = getStorage('ventas_dia');
+      } else {
+        const currentMonth = getCurrentMonth();
+        const allSales = getStorage('ventas_mes');
+        sales = allSales.filter(s => s.month_id === currentMonth);
+      }
+      
+      if (sales.length === 0) {
+        container.innerHTML = '<div style="padding: 12px; color: var(--muted); text-align: center;">No hay ventas para eliminar</div>';
+        return;
+      }
+      
+      sales.forEach((sale, index) => {
+        const div = document.createElement('div');
+        div.style.cssText = `
+          padding: 12px;
+          margin: 4px 0;
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+        `;
+        
+        const time = formatDateTimeForExcel(sale.timestamp);
+        div.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; color: var(--accent);">${formatCLP(sale.amount_with_vat)}</div>
+              <div style="font-size: 12px; color: var(--muted);">${time} | Com: ${formatCLP(sale.commission)}</div>
+            </div>
+            <button onclick="deleteSale('${period}', ${index})" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">Eliminar</button>
+          </div>
+        `;
+        
+        container.appendChild(div);
+      });
+    }
+
+    function deleteSale(period, index) {
+      if (!confirm('¿Estás seguro de eliminar esta venta?')) {
+        return;
+      }
+      
+      if (period === 'day') {
+        const sales = getStorage('ventas_dia');
+        sales.splice(index, 1);
+        setStorage('ventas_dia', sales);
+        
+        // Also remove from month
+        const monthSales = getStorage('ventas_mes');
+        monthSales.splice(monthSales.length - (getStorage('ventas_dia').length + 1) + index, 1);
+        setStorage('ventas_mes', monthSales);
+      } else {
+        const currentMonth = getCurrentMonth();
+        const allSales = getStorage('ventas_mes');
+        const monthSales = allSales.filter(s => s.month_id === currentMonth);
+        const saleToDelete = monthSales[index];
+        
+        const newAllSales = allSales.filter((s, i) => {
+          return !(s.timestamp === saleToDelete.timestamp && s.amount_with_vat === saleToDelete.amount_with_vat);
+        });
+        setStorage('ventas_mes', newAllSales);
+        
+        // Update day sales if it's today
+        const today = getCurrentDate();
+        if (saleToDelete.date_iso === today) {
+          const daySales = getStorage('ventas_dia');
+          const newDaySales = daySales.filter((s, i) => {
+            return !(s.timestamp === saleToDelete.timestamp && s.amount_with_vat === saleToDelete.amount_with_vat);
+          });
+          setStorage('ventas_dia', newDaySales);
+        }
+      }
+      
+      refreshUI();
+      updateDeleteList();
+      showToast('✓ Venta eliminada');
+    }
+
+    function confirmModify() {
+      const action = document.getElementById('modifyAction').value;
+      
+      if (action === 'add') {
+        const dateInput = document.getElementById('saleDate').value;
+        const amountInput = document.getElementById('saleAmount').value;
+        
+        if (!dateInput) {
+          alert('Por favor selecciona una fecha');
+          return;
+        }
+        
+        if (!amountInput) {
+          alert('Por favor ingresa un monto');
+          return;
+        }
+        
+        try {
+          const amt = parseAmount(amountInput);
+          const net = amt / 1.19;
+          const commission = net * COMMISSION_RATE;
+          
+          // Create date with selected date but current time
+          const selectedDate = new Date(dateInput + 'T00:00:00');
+          const now = new Date();
+          selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+          
+          const sale = {
+            amount_with_vat: round2(amt),
+            net_without_vat: round2(net),
+            commission: round2(commission),
+            timestamp: selectedDate.toISOString(),
+            date_iso: dateInput,
+            month_id: dateInput.substring(0, 7)
+          };
+          
+          // Add to month
+          const salesMonth = getStorage('ventas_mes');
+          salesMonth.push(sale);
+          setStorage('ventas_mes', salesMonth);
+          
+          // Add to day if it's today
+          const today = getCurrentDate();
+          if (dateInput === today) {
+            const salesDay = getStorage('ventas_dia');
+            salesDay.push(sale);
+            setStorage('ventas_dia', salesDay);
+          }
+          
+          hideModal('modifyModal');
+          refreshUI();
+          showToast('✓ Venta agregada correctamente');
+        } catch (e) {
+          alert(e.message);
+        }
+      }
+    }
 
     function refreshUI() {
       const salesDay = getStorage('ventas_dia');
