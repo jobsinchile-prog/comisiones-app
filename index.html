@@ -408,6 +408,33 @@
     </div>
   </div>
 
+  <div id="exportModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">📊 Exportar a Excel</div>
+      
+      <div style="margin: 16px 0;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Tipo de reporte:</label>
+        <select id="exportType" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
+          <option value="day">Ventas del Día</option>
+          <option value="month">Ventas del Mes</option>
+          <option value="history_days">Historial de Días Cerrados</option>
+          <option value="history_months">Historial de Meses Cerrados</option>
+        </select>
+      </div>
+
+      <div id="dateSelector" style="margin: 16px 0; display: none;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Seleccionar:</label>
+        <select id="dateSelect" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
+        </select>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="confirmExport()">📥 Exportar</button>
+        <button class="btn btn-secondary" onclick="hideModal('exportModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <script>
     const COMMISSION_RATE = 0.009;
@@ -663,26 +690,188 @@
     }
 
     function exportToExcel() {
-      const salesMonth = getStorage('ventas_mes');
-      const currentMonth = getCurrentMonth();
-      const sales = salesMonth.filter(s => s.month_id === currentMonth);
+      showModal('exportModal');
+      updateExportOptions();
+    }
 
-      if (sales.length === 0) {
-        alert('No hay ventas para exportar');
+    function updateExportOptions() {
+      const exportType = document.getElementById('exportType').value;
+      const dateSelector = document.getElementById('dateSelector');
+      const dateSelect = document.getElementById('dateSelect');
+      
+      dateSelect.innerHTML = '';
+      
+      if (exportType === 'day') {
+        dateSelector.style.display = 'block';
+        const historyDays = getStorage('historial_dias');
+        const salesDay = getStorage('ventas_dia');
+        const today = getCurrentDate();
+        
+        // Add today if has sales
+        if (salesDay.length > 0) {
+          const option = document.createElement('option');
+          option.value = today;
+          option.textContent = `${today} (Día actual - ${salesDay.length} ventas)`;
+          dateSelect.appendChild(option);
+        }
+        
+        // Add closed days
+        historyDays.slice().reverse().forEach(d => {
+          const option = document.createElement('option');
+          option.value = d.day_date;
+          option.textContent = `${d.day_date} (Cerrado - ${formatCLP(d.total_commission)} comisión)`;
+          dateSelect.appendChild(option);
+        });
+        
+        if (dateSelect.options.length === 0) {
+          const option = document.createElement('option');
+          option.textContent = 'No hay días con ventas';
+          dateSelect.appendChild(option);
+        }
+      } else if (exportType === 'month') {
+        dateSelector.style.display = 'block';
+        const historyMonths = getStorage('historial_meses');
+        const salesMonth = getStorage('ventas_mes');
+        const currentMonth = getCurrentMonth();
+        const currentSales = salesMonth.filter(s => s.month_id === currentMonth);
+        
+        // Add current month if has sales
+        if (currentSales.length > 0) {
+          const option = document.createElement('option');
+          option.value = currentMonth;
+          option.textContent = `${currentMonth} (Mes actual - ${currentSales.length} ventas)`;
+          dateSelect.appendChild(option);
+        }
+        
+        // Add closed months
+        historyMonths.slice().reverse().forEach(m => {
+          const option = document.createElement('option');
+          option.value = m.month_id;
+          option.textContent = `${m.month_id} (Cerrado - ${formatCLP(m.total_commission)} comisión)`;
+          dateSelect.appendChild(option);
+        });
+        
+        if (dateSelect.options.length === 0) {
+          const option = document.createElement('option');
+          option.textContent = 'No hay meses con ventas';
+          dateSelect.appendChild(option);
+        }
+      } else {
+        dateSelector.style.display = 'none';
+      }
+    }
+
+    function confirmExport() {
+      const exportType = document.getElementById('exportType').value;
+      const dateSelect = document.getElementById('dateSelect');
+      const selectedDate = dateSelect.value;
+      
+      let data = [];
+      let filename = '';
+      
+      if (exportType === 'day') {
+        const historyDays = getStorage('historial_dias');
+        const salesDay = getStorage('ventas_dia');
+        const today = getCurrentDate();
+        
+        if (selectedDate === today) {
+          // Export current day
+          data = salesDay;
+          filename = `ventas_dia_${selectedDate}.csv`;
+        } else {
+          // Export closed day - need to get individual sales
+          const dayData = historyDays.find(d => d.day_date === selectedDate);
+          if (dayData) {
+            // Create summary row
+            data = [{
+              timestamp: dayData.closed_at,
+              amount_with_vat: dayData.total_with_vat,
+              net_without_vat: dayData.total_without_vat,
+              commission: dayData.total_commission,
+              date_iso: dayData.day_date,
+              month_id: dayData.day_date.substring(0, 7)
+            }];
+            filename = `resumen_dia_${selectedDate}.csv`;
+          }
+        }
+      } else if (exportType === 'month') {
+        const currentMonth = getCurrentMonth();
+        const salesMonth = getStorage('ventas_mes');
+        const historyMonths = getStorage('historial_meses');
+        
+        if (selectedDate === currentMonth) {
+          // Export current month
+          data = salesMonth.filter(s => s.month_id === currentMonth);
+          filename = `ventas_mes_${selectedDate}.csv`;
+        } else {
+          // Export closed month - create summary
+          const monthData = historyMonths.find(m => m.month_id === selectedDate);
+          if (monthData) {
+            data = [{
+              timestamp: monthData.closed_at,
+              amount_with_vat: monthData.total_with_vat,
+              net_without_vat: monthData.total_without_vat,
+              commission: monthData.total_commission,
+              date_iso: '',
+              month_id: monthData.month_id
+            }];
+            filename = `resumen_mes_${selectedDate}.csv`;
+          }
+        }
+      } else if (exportType === 'history_days') {
+        const historyDays = getStorage('historial_dias');
+        data = historyDays.map(d => ({
+          timestamp: d.closed_at,
+          amount_with_vat: d.total_with_vat,
+          net_without_vat: d.total_without_vat,
+          commission: d.total_commission,
+          date_iso: d.day_date,
+          month_id: d.day_date.substring(0, 7)
+        }));
+        filename = 'historial_dias.csv';
+      } else if (exportType === 'history_months') {
+        const historyMonths = getStorage('historial_meses');
+        data = historyMonths.map(m => ({
+          timestamp: m.closed_at,
+          amount_with_vat: m.total_with_vat,
+          net_without_vat: m.total_without_vat,
+          commission: m.total_commission,
+          date_iso: '',
+          month_id: m.month_id
+        }));
+        filename = 'historial_meses.csv';
+      }
+      
+      if (data.length === 0) {
+        alert('No hay datos para exportar en la selección elegida');
         return;
       }
-
-      let csv = 'Fecha,Monto con IVA,Neto sin IVA,Comisión\n';
-      sales.forEach(s => {
-        csv += `${s.timestamp},${s.amount_with_vat},${s.net_without_vat},${s.commission}\n`;
+      
+      // Create CSV
+      let csv = 'Fecha/Hora,Monto con IVA,Neto sin IVA,Comisión,Fecha,Mes\n';
+      data.forEach(s => {
+        const timestamp = s.timestamp ? s.timestamp.substring(0, 19).replace('T', ' ') : '';
+        csv += `"${timestamp}",${s.amount_with_vat},${s.net_without_vat},${s.commission},"${s.date_iso || ''}","${s.month_id}"\n`;
       });
-
+      
+      // Download
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `reporte_${currentMonth}.csv`;
+      link.download = filename;
       link.click();
+      
+      hideModal('exportModal');
+      showToast(`✓ Exportado: ${filename}`);
     }
+
+    // Update export options when type changes
+    document.addEventListener('DOMContentLoaded', () => {
+      const exportTypeSelect = document.getElementById('exportType');
+      if (exportTypeSelect) {
+        exportTypeSelect.addEventListener('change', updateExportOptions);
+      }
+    });
 
     function refreshUI() {
       const salesDay = getStorage('ventas_dia');
