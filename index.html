@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#f7c600">
+  <meta name="description" content="Sistema de comisiones offline para vendedores">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Comisiones">
+  <title>Sistema de Comisiones</title>
+  <link rel="manifest" href="#" id="manifest-placeholder">
+  <style>
+    :root {
+      --bg: #0f0f10;
+      --card: #1a1a1c;
+      --text: #ffffff;
+      --accent: #f7c600;
+      --accent-strong: #d1a400;
+      --muted: #999999;
+      --border: #2a2a2a;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 8px;
+      overflow-x: hidden;
+    }
+    
+    .header {
+      background: var(--accent);
+      padding: 16px 12px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(247, 198, 0, 0.3);
+    }
+    
+    .header h2 {
+      margin: 0;
+      color: #111111;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    
+    .header p {
+      margin: 4px 0 0 0;
+      color: #111111;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 24px 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+    
+    .totals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .total-cell {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .total-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    
+    .total-value {
+      font-size: 18px;
+      color: var(--accent);
+      font-weight: 700;
+      word-break: break-word;
+    }
+    
+    .input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    
+    input[type="text"] {
+      flex: 1;
+      background: var(--card);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font-size: 16px;
+      padding: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+    
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .btn:active {
+      transform: scale(0.97);
+    }
+    
+    .btn-accent {
+      background: var(--accent);
+      color: #111111;
+    }
+    
+    .btn-accent:hover {
+      background: var(--accent-strong);
+      box-shadow: 0 4px 12px rgba(247, 198, 0, 0.4);
+    }
+    
+    .btn-danger {
+      background: #dc2626;
+      color: #ffffff;
+    }
+    
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+    
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+    
+    .btn-container .btn {
+      flex: 1;
+      min-width: 140px;
+    }
+    
+    .sales-list {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+    }
+    
+    .sales-list:empty::after {
+      content: "(sin ventas)";
+      color: var(--muted);
+      font-style: italic;
+    }
+    
+    .sale-item {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .sale-item:last-child {
+      border-bottom: none;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      border: 2px solid var(--border);
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    
+    .modal-buttons .btn {
+      flex: 1;
+    }
+    
+    .install-prompt {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .install-prompt.show {
+      display: flex;
+    }
+    
+    .install-prompt-text {
+      flex: 1;
+      color: #111111;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .install-prompt .btn {
+      background: #111111;
+      color: var(--accent);
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+    
+    @media (max-width: 768px) {
+      .header h2 { font-size: 18px; }
+      .total-value { font-size: 14px; }
+      .total-label { font-size: 9px; }
+      .btn-container { flex-direction: column; }
+      .btn-container .btn { min-width: 100%; }
+    }
+    
+    @media (max-width: 480px) {
+      body { padding: 4px; }
+      .header h2 { font-size: 16px; }
+      .total-value { font-size: 13px; }
+      .total-label { font-size: 8px; }
+      .totals-grid { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="installPrompt" class="install-prompt">
+    <div class="install-prompt-text">
+      📱 Instala esta app en tu celular para usarla offline
+    </div>
+    <button class="btn" onclick="installApp()">Instalar</button>
+  </div>
+
+  <div class="header">
+    <h2>Neumáticos y Llantas del Pacífico</h2>
+    <p>Sistema de Comisiones</p>
+  </div>
+
+  <div class="section-title">📊 Resumen de Ventas</div>
+  <div class="totals-grid">
+    <div class="total-cell">
+      <div class="total-label">Total Día (con IVA)</div>
+      <div class="total-value" id="dayWithVat">$ 0</div>
+    </div>
+    <div class="total-cell">
+      <div class="total-label">Total Día (sin IVA)</div>
+      <div class="total-value" id="dayWithoutVat">$ 0</div>
+    </div>
+    <div class="total-cell">
+      <div class="total-label">Comisión Día</div>
+      <div class="total-value" id="dayCommission">$ 0</div>
+    </div>
+    <div class="total-cell">
+      <div class="total-label">Total Mes (con IVA)</div>
+      <div class="total-value" id="monthWithVat">$ 0</div>
+    </div>
+    <div class="total-cell">
+      <div class="total-label">Total Mes (sin IVA)</div>
+      <div class="total-value" id="monthWithoutVat">$ 0</div>
+    </div>
+    <div class="total-cell">
+      <div class="total-label">Comisión Mes</div>
+      <div class="total-value" id="monthCommission">$ 0</div>
+    </div>
+  </div>
+
+  <div class="section-title">➕ Agregar Venta</div>
+  <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+    Introduce el <strong>monto TOTAL con IVA</strong> (ejemplo: 119000):
+  </p>
+  <div class="input-group">
+    <input type="text" id="amountInput" placeholder="119000" inputmode="numeric">
+    <button class="btn btn-accent" onclick="addSale()">Agregar</button>
+  </div>
+
+  <div class="section-title">📅 Ventas del Día</div>
+  <div class="sales-list" id="salesDay"></div>
+
+  <div class="section-title">📆 Ventas del Mes</div>
+  <div class="sales-list" id="salesMonth"></div>
+
+  <div class="section-title">⚙️ Acciones</div>
+  <div class="btn-container">
+    <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
+    <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
+    <button class="btn btn-secondary" onclick="exportToExcel()">Exportar Excel</button>
+  </div>
+
+  <div class="section-title">📜 Historial de Días Cerrados</div>
+  <div class="sales-list" id="historyDays"></div>
+
+  <div class="section-title">📜 Historial de Meses Cerrados</div>
+  <div class="sales-list" id="historyMonths"></div>
+
+  <div class="section-title">📊 Gráficos</div>
+  <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
+    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Diarias (Mes Actual)</h3>
+    <canvas id="dailyChart" style="max-height: 250px;"></canvas>
+  </div>
+  
+  <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
+    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Mensuales (Histórico)</h3>
+    <canvas id="monthlyChart" style="max-height: 250px;"></canvas>
+  </div>
+
+  <div class="section-title">🔄 Resetear Sistema</div>
+  <p style="color: #dc2626; font-size: 13px; margin-bottom: 12px;">
+    ⚠️ <strong>PELIGRO:</strong> Esta acción eliminará TODOS los datos guardados.
+  </p>
+  <button class="btn btn-danger" onclick="showResetModal()">Resetear Todo</button>
+
+  <!-- Modals -->
+  <div id="closeDayModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">¿Confirmar cierre de día?</div>
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="confirmCloseDay()">✓ Confirmar</button>
+        <button class="btn btn-secondary" onclick="hideModal('closeDayModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="closeMonthModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">¿Confirmar cierre de mes?</div>
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="confirmCloseMonth()">✓ Confirmar</button>
+        <button class="btn btn-secondary" onclick="hideModal('closeMonthModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resetModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">⚠️ ¿CONFIRMAR RESETEO COMPLETO?</div>
+      <p style="color: var(--muted); margin-bottom: 16px;">Se borrarán TODOS los datos.</p>
+      <div class="modal-buttons">
+        <button class="btn btn-danger" onclick="confirmReset()">✓ SÍ, BORRAR TODO</button>
+        <button class="btn btn-secondary" onclick="hideModal('resetModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    const COMMISSION_RATE = 0.009;
+    let deferredPrompt = null;
+    let dailyChartInstance = null;
+    let monthlyChartInstance = null;
+
+    // PWA Installation
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('installPrompt').classList.add('show');
+    });
+
+    function installApp() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            document.getElementById('installPrompt').classList.remove('show');
+          }
+          deferredPrompt = null;
+        });
+      }
+    }
+
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register(createServiceWorkerBlob()).then(() => {
+        console.log('Service Worker registrado');
+      });
+    }
+
+    function createServiceWorkerBlob() {
+      const swCode = `
+        const CACHE_NAME = 'comisiones-v1';
+        self.addEventListener('install', (e) => {
+          e.waitUntil(
+            caches.open(CACHE_NAME).then((cache) => {
+              return cache.addAll(['/']);
+            })
+          );
+        });
+        self.addEventListener('fetch', (e) => {
+          e.respondWith(
+            caches.match(e.request).then((response) => {
+              return response || fetch(e.request);
+            })
+          );
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      return URL.createObjectURL(blob);
+    }
+
+    // Manifest creation
+    const manifest = {
+      name: "Sistema de Comisiones",
+      short_name: "Comisiones",
+      description: "Sistema de comisiones offline para vendedores",
+      start_url: location.href,
+      display: "standalone",
+      background_color: "#0f0f10",
+      theme_color: "#f7c600",
+      orientation: "portrait",
+      icons: [
+        {
+          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23f7c600' width='512' height='512'/%3E%3Ctext x='256' y='360' font-size='280' text-anchor='middle' fill='%23111111' font-weight='bold'%3E💰%3C/text%3E%3C/svg%3E",
+          sizes: "512x512",
+          type: "image/svg+xml"
+        }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    document.getElementById('manifest-placeholder').setAttribute('href', manifestURL);
+
+    // Storage functions with error handling
+    function getStorage(key) {
+      try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        console.error('Error reading storage:', e);
+        return [];
+      }
+    }
+
+    function setStorage(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch (e) {
+        console.error('Error saving storage:', e);
+        alert('Error al guardar datos. Verifica el espacio disponible.');
+        return false;
+      }
+    }
+
+    function formatCLP(amount) {
+      const num = Math.round(parseFloat(amount) || 0);
+      const sign = num < 0 ? '-' : '';
+      const abs = Math.abs(num);
+      return `${sign}$ ${abs.toLocaleString('es-CL')}`;
+    }
+
+    function parseAmount(str) {
+      if (!str) throw new Error('Introduce un número válido');
+      const cleaned = str.replace(/[^0-9]/g, '');
+      if (!cleaned) throw new Error('Introduce un número válido');
+      return parseFloat(cleaned);
+    }
+
+    function getCurrentDate() {
+      const now = new Date();
+      return now.toISOString().split('T')[0];
+    }
+
+    function getCurrentMonth() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function round2(x) {
+      return Math.floor(x * 100 + 0.5) / 100;
+    }
+
+    function addSale() {
+      const input = document.getElementById('amountInput');
+      const amountText = input.value;
+      
+      try {
+        const amt = parseAmount(amountText);
+        const net = amt / 1.19;
+        const commission = net * COMMISSION_RATE;
+        
+        const sale = {
+          amount_with_vat: round2(amt),
+          net_without_vat: round2(net),
+          commission: round2(commission),
+          timestamp: new Date().toISOString(),
+          date_iso: getCurrentDate(),
+          month_id: getCurrentMonth()
+        };
+
+        const salesDay = getStorage('ventas_dia');
+        salesDay.push(sale);
+        const savedDay = setStorage('ventas_dia', salesDay);
+
+        const salesMonth = getStorage('ventas_mes');
+        salesMonth.push(sale);
+        const savedMonth = setStorage('ventas_mes', salesMonth);
+
+        if (savedDay && savedMonth) {
+          input.value = '';
+          refreshUI();
+          
+          // Show confirmation
+          showToast('✓ Venta agregada correctamente');
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #10b981;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+    }
+
+    function closeDay() {
+      const salesDay = getStorage('ventas_dia');
+      const total_with_vat = round2(salesDay.reduce((sum, s) => sum + s.amount_with_vat, 0));
+      const total_without_vat = round2(salesDay.reduce((sum, s) => sum + s.net_without_vat, 0));
+      const total_commission = round2(salesDay.reduce((sum, s) => sum + s.commission, 0));
+
+      const summary = {
+        day_date: getCurrentDate(),
+        total_with_vat,
+        total_without_vat,
+        total_commission,
+        closed_at: new Date().toISOString()
+      };
+
+      const historyDays = getStorage('historial_dias');
+      historyDays.push(summary);
+      setStorage('historial_dias', historyDays);
+      setStorage('ventas_dia', []);
+      refreshUI();
+      showToast('✓ Día cerrado correctamente');
+    }
+
+    function closeMonth() {
+      const salesMonth = getStorage('ventas_mes');
+      const currentMonth = getCurrentMonth();
+      const salesCurrentMonth = salesMonth.filter(s => s.month_id === currentMonth);
+      
+      const total_with_vat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.amount_with_vat, 0));
+      const total_without_vat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.net_without_vat, 0));
+      const total_commission = round2(salesCurrentMonth.reduce((sum, s) => sum + s.commission, 0));
+
+      const summary = {
+        month_id: currentMonth,
+        total_with_vat,
+        total_without_vat,
+        total_commission,
+        closed_at: new Date().toISOString()
+      };
+
+      const historyMonths = getStorage('historial_meses');
+      historyMonths.push(summary);
+      setStorage('historial_meses', historyMonths);
+
+      const remainingSales = salesMonth.filter(s => s.month_id !== currentMonth);
+      setStorage('ventas_mes', remainingSales);
+
+      const historyDays = getStorage('historial_dias');
+      const remainingDays = historyDays.filter(d => !d.day_date.startsWith(currentMonth));
+      setStorage('historial_dias', remainingDays);
+
+      setStorage('ventas_dia', []);
+      refreshUI();
+      showToast('✓ Mes cerrado correctamente');
+    }
+
+    function resetAll() {
+      if (!confirm('⚠️ ¿Estás COMPLETAMENTE SEGURO? Se borrarán TODOS los datos de forma PERMANENTE.')) {
+        return;
+      }
+      setStorage('ventas_dia', []);
+      setStorage('ventas_mes', []);
+      setStorage('historial_dias', []);
+      setStorage('historial_meses', []);
+      refreshUI();
+      showToast('Sistema reseteado');
+    }
+
+    function exportToExcel() {
+      const salesMonth = getStorage('ventas_mes');
+      const currentMonth = getCurrentMonth();
+      const sales = salesMonth.filter(s => s.month_id === currentMonth);
+
+      if (sales.length === 0) {
+        alert('No hay ventas para exportar');
+        return;
+      }
+
+      let csv = 'Fecha,Monto con IVA,Neto sin IVA,Comisión\n';
+      sales.forEach(s => {
+        csv += `${s.timestamp},${s.amount_with_vat},${s.net_without_vat},${s.commission}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `reporte_${currentMonth}.csv`;
+      link.click();
+    }
+
+    function refreshUI() {
+      const salesDay = getStorage('ventas_dia');
+      const salesMonth = getStorage('ventas_mes');
+      const currentMonth = getCurrentMonth();
+      const salesCurrentMonth = salesMonth.filter(s => s.month_id === currentMonth);
+
+      const dayWithVat = round2(salesDay.reduce((sum, s) => sum + s.amount_with_vat, 0));
+      const dayWithoutVat = round2(salesDay.reduce((sum, s) => sum + s.net_without_vat, 0));
+      const dayCommission = round2(salesDay.reduce((sum, s) => sum + s.commission, 0));
+
+      const monthWithVat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.amount_with_vat, 0));
+      const monthWithoutVat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.net_without_vat, 0));
+      const monthCommission = round2(salesCurrentMonth.reduce((sum, s) => sum + s.commission, 0));
+
+      document.getElementById('dayWithVat').textContent = formatCLP(dayWithVat);
+      document.getElementById('dayWithoutVat').textContent = formatCLP(dayWithoutVat);
+      document.getElementById('dayCommission').textContent = formatCLP(dayCommission);
+      document.getElementById('monthWithVat').textContent = formatCLP(monthWithVat);
+      document.getElementById('monthWithoutVat').textContent = formatCLP(monthWithoutVat);
+      document.getElementById('monthCommission').textContent = formatCLP(monthCommission);
+
+      renderSalesList('salesDay', salesDay.slice(-20).reverse());
+      renderSalesList('salesMonth', salesCurrentMonth.slice(-20).reverse());
+
+      const historyDays = getStorage('historial_dias');
+      renderHistoryDays(historyDays.slice(-20).reverse());
+
+      const historyMonths = getStorage('historial_meses');
+      renderHistoryMonths(historyMonths.slice(-20).reverse());
+
+      renderCharts();
+    }
+
+    function renderSalesList(elementId, sales) {
+      const container = document.getElementById(elementId);
+      container.innerHTML = '';
+      sales.forEach((s, i) => {
+        const div = document.createElement('div');
+        div.className = 'sale-item';
+        const time = s.timestamp.substring(0, 16).replace('T', ' ');
+        div.textContent = `${i + 1}. ${formatCLP(s.amount_with_vat)} | Neto: ${formatCLP(s.net_without_vat)} | Com: ${formatCLP(s.commission)} | ${time}`;
+        container.appendChild(div);
+      });
+    }
+
+    function renderHistoryDays(days) {
+      const container = document.getElementById('historyDays');
+      container.innerHTML = '';
+      days.forEach((d, i) => {
+        const div = document.createElement('div');
+        div.className = 'sale-item';
+        div.textContent = `${i + 1}. ${d.day_date} | ${formatCLP(d.total_with_vat)} | Neto: ${formatCLP(d.total_without_vat)} | Com: ${formatCLP(d.total_commission)}`;
+        container.appendChild(div);
+      });
+    }
+
+    function renderHistoryMonths(months) {
+      const container = document.getElementById('historyMonths');
+      container.innerHTML = '';
+      months.forEach((m, i) => {
+        const div = document.createElement('div');
+        div.className = 'sale-item';
+        div.textContent = `${i + 1}. ${m.month_id} | ${formatCLP(m.total_with_vat)} | Neto: ${formatCLP(m.total_without_vat)} | Com: ${formatCLP(m.total_commission)}`;
+        container.appendChild(div);
+      });
+    }
+
+    function showModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+
+    function hideModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function showCloseDayModal() {
+      showModal('closeDayModal');
+    }
+
+    function showCloseMonthModal() {
+      showModal('closeMonthModal');
+    }
+
+    function showResetModal() {
+      showModal('resetModal');
+    }
+
+    function confirmCloseDay() {
+      closeDay();
+      hideModal('closeDayModal');
+    }
+
+    function confirmCloseMonth() {
+      closeMonth();
+      hideModal('closeMonthModal');
+    }
+
+    function confirmReset() {
+      resetAll();
+      hideModal('resetModal');
+    }
+
+    function renderCharts() {
+      renderDailyChart();
+      renderMonthlyChart();
+    }
+
+    function renderDailyChart() {
+      const currentMonth = getCurrentMonth();
+      const historyDays = getStorage('historial_dias');
+      const daysInMonth = historyDays.filter(d => d.day_date.startsWith(currentMonth));
+      
+      // Include today's data if exists
+      const salesDay = getStorage('ventas_dia');
+      const todayCommission = round2(salesDay.reduce((sum, s) => sum + s.commission, 0));
+      const today = getCurrentDate();
+
+      const dataMap = {};
+      daysInMonth.forEach(d => {
+        const day = parseInt(d.day_date.split('-')[2]);
+        dataMap[day] = (dataMap[day] || 0) + d.total_commission;
+      });
+
+      if (todayCommission > 0) {
+        const todayDay = parseInt(today.split('-')[2]);
+        dataMap[todayDay] = (dataMap[todayDay] || 0) + todayCommission;
+      }
+
+      const days = Object.keys(dataMap).map(Number).sort((a, b) => a - b);
+      const values = days.map(d => dataMap[d]);
+
+      if (days.length === 0) {
+        days.push(1);
+        values.push(0);
+      }
+
+      const ctx = document.getElementById('dailyChart');
+      if (dailyChartInstance) {
+        dailyChartInstance.destroy();
+      }
+
+      dailyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{
+            label: 'Comisión',
+            data: values,
+            backgroundColor: '#f7c600',
+            borderColor: '#d1a400',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return formatCLP(context.parsed.y);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return formatCLP(value);
+                },
+                color: '#999999'
+              },
+              grid: {
+                color: '#2a2a2a'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#999999'
+              },
+              grid: {
+                color: '#2a2a2a'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderMonthlyChart() {
+      const historyMonths = getStorage('historial_meses');
+      const salesMonth = getStorage('ventas_mes');
+      const currentMonth = getCurrentMonth();
+      const currentCommission = round2(salesMonth.filter(s => s.month_id === currentMonth).reduce((sum, s) => sum + s.commission, 0));
+
+      const dataMap = {};
+      historyMonths.forEach(m => {
+        dataMap[m.month_id] = (dataMap[m.month_id] || 0) + m.total_commission;
+      });
+
+      if (currentCommission > 0) {
+        dataMap[currentMonth] = (dataMap[currentMonth] || 0) + currentCommission;
+      }
+
+      let months = Object.keys(dataMap).sort();
+      let values = months.map(m => dataMap[m]);
+
+      if (months.length === 0) {
+        months = [currentMonth];
+        values = [0];
+      }
+
+      const monthNames = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+      const labels = months.map(m => {
+        const monthNum = parseInt(m.split('-')[1]);
+        return monthNames[monthNum - 1];
+      });
+
+      const ctx = document.getElementById('monthlyChart');
+      if (monthlyChartInstance) {
+        monthlyChartInstance.destroy();
+      }
+
+      monthlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Comisión',
+            data: values,
+            backgroundColor: '#111111',
+            borderColor: '#444444',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return formatCLP(context.parsed.y);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return formatCLP(value);
+                },
+                color: '#999999'
+              },
+              grid: {
+                color: '#2a2a2a'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#999999'
+              },
+              grid: {
+                color: '#2a2a2a'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Enter key support
+    document.getElementById('amountInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addSale();
+    });
+
+    // Real-time formatting as user types
+    document.getElementById('amountInput').addEventListener('input', (e) => {
+      let value = e.target.value.replace(/[^0-9]/g, '');
+      if (value) {
+        const cursorPos = e.target.selectionStart;
+        const oldLength = e.target.value.length;
+        
+        // Format the number
+        const num = parseInt(value);
+        const formatted = '$ ' + num.toLocaleString('es-CL');
+        e.target.value = formatted;
+        
+        // Maintain cursor position
+        const newLength = formatted.length;
+        const diff = newLength - oldLength;
+        e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+      }
+    });
+
+    // Initial load
+    refreshUI();
+  </script>
+</body>
+</html>
