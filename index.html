@@ -273,12 +273,76 @@
       font-size: 13px;
     }
     
+    /* ==================== NUEVOS ESTILOS PARA ANÁLISIS ==================== */
+    .analysis-screen {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .analysis-screen.active {
+      display: block;
+    }
+    
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .kpi-card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 16px 12px;
+      text-align: center;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .kpi-period {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    
+    .kpi-title {
+      font-size: 13px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    
+    .kpi-value {
+      font-size: 18px;
+      color: var(--text);
+      font-weight: 700;
+      word-break: break-word;
+    }
+    
+    .hourly-chart-container {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
     @media (max-width: 768px) {
       .header h2 { font-size: 18px; }
       .total-value { font-size: 14px; }
       .total-label { font-size: 9px; }
       .btn-container { flex-direction: column; }
       .btn-container .btn { min-width: 100%; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .kpi-value { font-size: 16px; }
     }
     
     @media (max-width: 480px) {
@@ -291,104 +355,205 @@
         padding: 16px;
         max-width: 95%;
       }
+      .kpi-value { font-size: 14px; }
     }
   </style>
 </head>
 <body>
-  <div id="installPrompt" class="install-prompt">
-    <div class="install-prompt-text">
-      📱 Instala esta app en tu celular para usarla offline
+  <!-- Pantalla Principal (siempre visible al inicio) -->
+  <div id="mainScreen">
+    <div id="installPrompt" class="install-prompt">
+      <div class="install-prompt-text">
+        📱 Instala esta app en tu celular para usarla offline
+      </div>
+      <button class="btn" onclick="installApp()">Instalar</button>
     </div>
-    <button class="btn" onclick="installApp()">Instalar</button>
+
+    <div class="header">
+      <h2>Neumáticos y Llantas del Pacífico</h2>
+      <p>Sistema de Comisiones</p>
+    </div>
+
+    <div class="section-title">📊 Resumen de Ventas</div>
+    <div class="totals-grid">
+      <div class="total-cell">
+        <div class="total-label">Total Día (con IVA)</div>
+        <div class="total-value" id="dayWithVat">$ 0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Total Día (sin IVA)</div>
+        <div class="total-value" id="dayWithoutVat">$ 0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Comisión Día</div>
+        <div class="total-value" id="dayCommission">$ 0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Total Mes (con IVA)</div>
+        <div class="total-value" id="monthWithVat">$ 0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Total Mes (sin IVA)</div>
+        <div class="total-value" id="monthWithoutVat">$ 0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Comisión Mes</div>
+        <div class="total-value" id="monthCommission">$ 0</div>
+      </div>
+    </div>
+
+    <div class="section-title">➕ Agregar Venta</div>
+    <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+      Introduce el <strong>monto TOTAL con IVA</strong> (ejemplo: 119000):
+    </p>
+    <div class="input-group">
+      <input type="text" id="amountInput" placeholder="119000" inputmode="numeric">
+      <button class="btn btn-accent" onclick="addSale()">Agregar</button>
+    </div>
+    
+    <button class="btn btn-danger" onclick="deleteLastSale()" style="width: 100%; margin-top: 8px;">
+      🗑️ Eliminar Última Venta
+    </button>
+
+    <div class="section-title">📅 Ventas del Día</div>
+    <div class="sales-list" id="salesDay"></div>
+
+    <div class="section-title">📆 Ventas del Mes</div>
+    <div class="sales-list" id="salesMonth"></div>
+
+    <div class="section-title">📜 Historial Permanente de Ventas</div>
+    <div class="sales-list" id="permanentSales"></div>
+
+    <div class="section-title">⚙️ Acciones</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0;">
+      <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
+      <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
+      <button class="btn btn-secondary" onclick="showExportModal()">Exportar Excel</button>
+      <button class="btn btn-accent" onclick="showModifyModal()">Modificar Ventas</button>
+    </div>
+    
+    <!-- ==================== NUEVO BOTÓN ==================== -->
+    <div style="margin: 16px 0;">
+      <button class="btn btn-accent" onclick="showAnalysisScreen()" style="width: 100%;">
+        📈 Análisis de Ventas
+      </button>
+    </div>
+
+    <div class="section-title">📊 Gráficos</div>
+    <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
+      <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Diarias (Mes Actual)</h3>
+      <canvas id="dailyChart" style="max-height: 250px;"></canvas>
+    </div>
+    
+    <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
+      <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Mensuales (Histórico)</h3>
+      <canvas id="monthlyChart" style="max-height: 250px;"></canvas>
+    </div>
+
+    <div class="section-title">🔄 Resetear Sistema</div>
+    <p style="color: #dc2626; font-size: 13px; margin-bottom: 12px;">
+      ⚠️ <strong>PELIGRO:</strong> Esta acción eliminará TODOS los datos guardados.
+    </p>
+    <button class="btn btn-danger" onclick="showResetModal()">Resetear Todo</button>
   </div>
 
-  <div class="header">
-    <h2>Neumáticos y Llantas del Pacífico</h2>
-    <p>Sistema de Comisiones</p>
+  <!-- ==================== PANTALLA DE ANÁLISIS (oculta al inicio) ==================== -->
+  <div id="analysisScreen" class="analysis-screen">
+    <div class="header">
+      <h2>Análisis de Ventas</h2>
+      <p>KPI Básicos - Resumen Ejecutivo</p>
+    </div>
+
+    <div class="section-title">📊 KPI Diarios</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-period">DÍA</div>
+        <div class="kpi-title">Ventas Totales (sin IVA)</div>
+        <div class="kpi-value" id="kpiDayTotal">$ 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">DÍA</div>
+        <div class="kpi-title">Cantidad de Ventas</div>
+        <div class="kpi-value" id="kpiDayCount">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">DÍA</div>
+        <div class="kpi-title">Ticket Promedio</div>
+        <div class="kpi-value" id="kpiDayAverage">$ 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">DÍA</div>
+        <div class="kpi-title">Comisión Vendedor</div>
+        <div class="kpi-value" id="kpiDayCommission">$ 0</div>
+      </div>
+    </div>
+
+    <div class="section-title">📊 KPI Semanales</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-period">SEMANA</div>
+        <div class="kpi-title">Ventas Totales (sin IVA)</div>
+        <div class="kpi-value" id="kpiWeekTotal">$ 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">SEMANA</div>
+        <div class="kpi-title">Cantidad de Ventas</div>
+        <div class="kpi-value" id="kpiWeekCount">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">SEMANA</div>
+        <div class="kpi-title">Ticket Promedio</div>
+        <div class="kpi-value" id="kpiWeekAverage">$ 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">SEMANA</div>
+        <div class="kpi-title">Comisión Vendedor</div>
+        <div class="kpi-value" id="kpiWeekCommission">$ 0</div>
+      </div>
+    </div>
+
+    <div class="section-title">📊 KPI Mensuales</div>
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-period">MES</div>
+        <div class="kpi-title">Ventas Totales (sin IVA)</div>
+        <div class="kpi-value" id="kpiMonthTotal">$ 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">MES</div>
+        <div class="kpi-title">Cantidad de Ventas</div>
+        <div class="kpi-value" id="kpiMonthCount">0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">MES</div>
+        <div class="kpi-title">Ticket Promedio</div>
+        <div class="kpi-value" id="kpiMonthAverage">$ 0</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-period">MES</div>
+        <div class="kpi-title">Comisión Vendedor</div>
+        <div class="kpi-value" id="kpiMonthCommission">$ 0</div>
+      </div>
+    </div>
+
+    <div class="section-title">🕒 Ventas por Hora (Hoy)</div>
+    <div class="hourly-chart-container">
+      <canvas id="hourlyChart" style="max-height: 200px;"></canvas>
+    </div>
+
+    <!-- ==================== BOTÓN VOLVER ==================== -->
+    <div style="margin: 24px 0;">
+      <button class="btn btn-accent" onclick="showMainScreen()" style="width: 100%;">
+        ← Volver a la pantalla principal
+      </button>
+    </div>
   </div>
 
-  <div class="section-title">📊 Resumen de Ventas</div>
-  <div class="totals-grid">
-    <div class="total-cell">
-      <div class="total-label">Total Día (con IVA)</div>
-      <div class="total-value" id="dayWithVat">$ 0</div>
-    </div>
-    <div class="total-cell">
-      <div class="total-label">Total Día (sin IVA)</div>
-      <div class="total-value" id="dayWithoutVat">$ 0</div>
-    </div>
-    <div class="total-cell">
-      <div class="total-label">Comisión Día</div>
-      <div class="total-value" id="dayCommission">$ 0</div>
-    </div>
-    <div class="total-cell">
-      <div class="total-label">Total Mes (con IVA)</div>
-      <div class="total-value" id="monthWithVat">$ 0</div>
-    </div>
-    <div class="total-cell">
-      <div class="total-label">Total Mes (sin IVA)</div>
-      <div class="total-value" id="monthWithoutVat">$ 0</div>
-    </div>
-    <div class="total-cell">
-      <div class="total-label">Comisión Mes</div>
-      <div class="total-value" id="monthCommission">$ 0</div>
-    </div>
-  </div>
-
-  <div class="section-title">➕ Agregar Venta</div>
-  <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
-    Introduce el <strong>monto TOTAL con IVA</strong> (ejemplo: 119000):
-  </p>
-  <div class="input-group">
-    <input type="text" id="amountInput" placeholder="119000" inputmode="numeric">
-    <button class="btn btn-accent" onclick="addSale()">Agregar</button>
-  </div>
-  
-  <button class="btn btn-danger" onclick="deleteLastSale()" style="width: 100%; margin-top: 8px;">
-    🗑️ Eliminar Última Venta
-  </button>
-
-  <div class="section-title">📅 Ventas del Día</div>
-  <div class="sales-list" id="salesDay"></div>
-
-  <div class="section-title">📆 Ventas del Mes</div>
-  <div class="sales-list" id="salesMonth"></div>
-
-  <div class="section-title">⚙️ Acciones</div>
-  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0;">
-    <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
-    <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
-    <button class="btn btn-secondary" onclick="showExportModal()">Exportar Excel</button>
-    <button class="btn btn-accent" onclick="showModifyModal()">Modificar Ventas</button>
-  </div>
-
-  <div class="section-title">📜 Historial de Días Cerrados</div>
-  <div class="sales-list" id="historyDays"></div>
-
-  <div class="section-title">📜 Historial de Meses Cerrados</div>
-  <div class="sales-list" id="historyMonths"></div>
-
-  <div class="section-title">📊 Gráficos</div>
-  <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
-    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Diarias (Mes Actual)</h3>
-    <canvas id="dailyChart" style="max-height: 250px;"></canvas>
-  </div>
-  
-  <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
-    <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Mensuales (Histórico)</h3>
-    <canvas id="monthlyChart" style="max-height: 250px;"></canvas>
-  </div>
-
-  <div class="section-title">🔄 Resetear Sistema</div>
-  <p style="color: #dc2626; font-size: 13px; margin-bottom: 12px;">
-    ⚠️ <strong>PELIGRO:</strong> Esta acción eliminará TODOS los datos guardados.
-  </p>
-  <button class="btn btn-danger" onclick="showResetModal()">Resetear Todo</button>
-
-  <!-- Modals -->
+  <!-- Modals (sin cambios) -->
   <div id="closeDayModal" class="modal">
     <div class="modal-content">
       <div class="modal-title">¿Confirmar cierre de día?</div>
+      <p style="color: var(--muted); margin-bottom: 16px;">Se vaciarán las ventas del día actual.</p>
       <div class="modal-buttons">
         <button class="btn btn-accent" onclick="confirmCloseDay()">✓ Confirmar</button>
         <button class="btn btn-secondary" onclick="hideModal('closeDayModal')">✗ Cancelar</button>
@@ -399,6 +564,7 @@
   <div id="closeMonthModal" class="modal">
     <div class="modal-content">
       <div class="modal-title">¿Confirmar cierre de mes?</div>
+      <p style="color: var(--muted); margin-bottom: 16px;">Se vaciarán las ventas del día y del mes actual.</p>
       <div class="modal-buttons">
         <button class="btn btn-accent" onclick="confirmCloseMonth()">✓ Confirmar</button>
         <button class="btn btn-secondary" onclick="hideModal('closeMonthModal')">✗ Cancelar</button>
@@ -426,8 +592,7 @@
         <select id="exportType" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
           <option value="day">Ventas del Día</option>
           <option value="month">Ventas del Mes</option>
-          <option value="history_days">Historial de Días Cerrados</option>
-          <option value="history_months">Historial de Meses Cerrados</option>
+          <option value="permanent">Historial Permanente</option>
         </select>
       </div>
 
@@ -453,6 +618,7 @@
         <select id="modifyAction" onchange="updateModifyAction()" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
           <option value="add">➕ Agregar Venta</option>
           <option value="delete">🗑️ Eliminar Venta</option>
+          <option value="search">🔍 Buscar en Historial</option>
         </select>
       </div>
 
@@ -469,10 +635,21 @@
         <select id="deletePeriod" onchange="updateDeleteList()" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
           <option value="day">Ventas del Día</option>
           <option value="month">Ventas del Mes</option>
+          <option value="permanent">Historial Permanente</option>
         </select>
         
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Seleccionar venta a eliminar:</label>
         <div id="salesListToDelete" style="max-height: 200px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px;">
+        </div>
+      </div>
+
+      <div id="searchSaleSection" style="margin: 16px 0; display: none;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Buscar en Historial Permanente:</label>
+        <input type="text" id="searchQuery" placeholder="Buscar por mes (ej: 2024-12) o monto..." style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Resultados:</label>
+        <div id="searchResults" style="max-height: 200px; overflow-y: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px;">
+          <div style="padding: 12px; color: var(--muted); text-align: center;">Ingrese un término de búsqueda</div>
         </div>
       </div>
 
@@ -489,7 +666,176 @@
     let deferredPrompt = null;
     let dailyChartInstance = null;
     let monthlyChartInstance = null;
+    let hourlyChartInstance = null;
 
+    // ==================== FUNCIONES PARA CAMBIAR PANTALLAS ====================
+    function showMainScreen() {
+      document.getElementById('mainScreen').style.display = 'block';
+      document.getElementById('analysisScreen').classList.remove('active');
+      refreshUI(); // Refrescar datos si hubo cambios
+    }
+
+    function showAnalysisScreen() {
+      document.getElementById('mainScreen').style.display = 'none';
+      document.getElementById('analysisScreen').classList.add('active');
+      calculateAndDisplayKPIs();
+    }
+
+    // ==================== CÁLCULO DE KPIs ====================
+    function calculateAndDisplayKPIs() {
+      const permanentSales = getStorage('ventas_permanentes');
+      const today = getCurrentDate();
+      const currentMonth = getCurrentMonth();
+      
+      // Obtener fecha de inicio de semana (lunes)
+      const startOfWeek = getStartOfWeek();
+      
+      // Filtrar ventas por período
+      const daySales = permanentSales.filter(s => s.date_iso === today);
+      const weekSales = permanentSales.filter(s => isDateInWeek(s.date_iso, startOfWeek));
+      const monthSales = permanentSales.filter(s => s.month_id === currentMonth);
+      
+      // Calcular KPIs para DÍA
+      const dayTotal = daySales.reduce((sum, s) => sum + s.net_without_vat, 0);
+      const dayCount = daySales.length;
+      const dayAverage = dayCount > 0 ? dayTotal / dayCount : 0;
+      const dayCommission = daySales.reduce((sum, s) => sum + s.commission, 0);
+      
+      // Calcular KPIs para SEMANA
+      const weekTotal = weekSales.reduce((sum, s) => sum + s.net_without_vat, 0);
+      const weekCount = weekSales.length;
+      const weekAverage = weekCount > 0 ? weekTotal / weekCount : 0;
+      const weekCommission = weekSales.reduce((sum, s) => sum + s.commission, 0);
+      
+      // Calcular KPIs para MES
+      const monthTotal = monthSales.reduce((sum, s) => sum + s.net_without_vat, 0);
+      const monthCount = monthSales.length;
+      const monthAverage = monthCount > 0 ? monthTotal / monthCount : 0;
+      const monthCommission = monthSales.reduce((sum, s) => sum + s.commission, 0);
+      
+      // Actualizar UI con KPIs
+      document.getElementById('kpiDayTotal').textContent = formatCLP(dayTotal);
+      document.getElementById('kpiDayCount').textContent = dayCount;
+      document.getElementById('kpiDayAverage').textContent = formatCLP(dayAverage);
+      document.getElementById('kpiDayCommission').textContent = formatCLP(dayCommission);
+      
+      document.getElementById('kpiWeekTotal').textContent = formatCLP(weekTotal);
+      document.getElementById('kpiWeekCount').textContent = weekCount;
+      document.getElementById('kpiWeekAverage').textContent = formatCLP(weekAverage);
+      document.getElementById('kpiWeekCommission').textContent = formatCLP(weekCommission);
+      
+      document.getElementById('kpiMonthTotal').textContent = formatCLP(monthTotal);
+      document.getElementById('kpiMonthCount').textContent = monthCount;
+      document.getElementById('kpiMonthAverage').textContent = formatCLP(monthAverage);
+      document.getElementById('kpiMonthCommission').textContent = formatCLP(monthCommission);
+      
+      // Generar gráfico de ventas por hora
+      renderHourlyChart(daySales);
+    }
+
+    // ==================== FUNCIONES AUXILIARES PARA KPIs ====================
+    function getStartOfWeek() {
+      const now = new Date();
+      const day = now.getDay(); // 0 = Domingo, 1 = Lunes, ...
+      const diff = day === 0 ? 6 : day - 1; // Diferencia hasta el lunes
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+      return startOfWeek.toISOString().split('T')[0];
+    }
+
+    function isDateInWeek(dateString, startOfWeek) {
+      const date = new Date(dateString);
+      const start = new Date(startOfWeek);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6); // 6 días después (domingo)
+      
+      return date >= start && date <= end;
+    }
+
+    function renderHourlyChart(daySales) {
+      // Agrupar ventas por hora
+      const hourlyData = {};
+      daySales.forEach(sale => {
+        const hour = new Date(sale.timestamp).getHours();
+        const hourLabel = `${hour}:00`;
+        hourlyData[hourLabel] = (hourlyData[hourLabel] || 0) + sale.net_without_vat;
+      });
+      
+      // Ordenar horas
+      const hours = Object.keys(hourlyData).sort((a, b) => {
+        const hourA = parseInt(a.split(':')[0]);
+        const hourB = parseInt(b.split(':')[0]);
+        return hourA - hourB;
+      });
+      
+      const values = hours.map(hour => hourlyData[hour]);
+      
+      // Si no hay datos, mostrar mensaje
+      if (hours.length === 0) {
+        hours.push('Sin datos');
+        values.push(0);
+      }
+      
+      const ctx = document.getElementById('hourlyChart');
+      if (hourlyChartInstance) {
+        hourlyChartInstance.destroy();
+      }
+      
+      hourlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: hours,
+          datasets: [{
+            label: 'Ventas por Hora (sin IVA)',
+            data: values,
+            backgroundColor: '#f7c600',
+            borderColor: '#d1a400',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return formatCLP(context.parsed.y);
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return formatCLP(value);
+                },
+                color: '#999999'
+              },
+              grid: {
+                color: '#2a2a2a'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#999999'
+              },
+              grid: {
+                color: '#2a2a2a'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // ==================== FUNCIONES EXISTENTES (SIN CAMBIOS) ====================
     // PWA Installation
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -649,19 +995,24 @@
           month_id: getCurrentMonth()
         };
 
-        const salesDay = getStorage('ventas_dia');
-        salesDay.push(sale);
-        const savedDay = setStorage('ventas_dia', salesDay);
+        // Agregar a ventas permanentes
+        const permanentSales = getStorage('ventas_permanentes');
+        permanentSales.push(sale);
+        setStorage('ventas_permanentes', permanentSales);
 
+        // Agregar a ventas del mes
         const salesMonth = getStorage('ventas_mes');
         salesMonth.push(sale);
-        const savedMonth = setStorage('ventas_mes', salesMonth);
+        setStorage('ventas_mes', salesMonth);
 
-        if (savedDay && savedMonth) {
+        // Agregar a ventas del día
+        const salesDay = getStorage('ventas_dia');
+        salesDay.push(sale);
+        setStorage('ventas_dia', salesDay);
+
+        if (input.value) {
           input.value = '';
           refreshUI();
-          
-          // Show confirmation
           showToast('✓ Venta agregada correctamente');
         }
       } catch (e) {
@@ -684,19 +1035,29 @@
         return;
       }
       
-      // Remove from day sales
-      salesDay.pop();
-      setStorage('ventas_dia', salesDay);
-      
-      // Remove from month sales (find and remove the exact same sale)
-      const salesMonth = getStorage('ventas_mes');
-      const indexInMonth = salesMonth.findIndex(s => 
+      // Eliminar del historial permanente
+      const permanentSales = getStorage('ventas_permanentes');
+      const permIndex = permanentSales.findIndex(s => 
         s.timestamp === lastSale.timestamp && 
         s.amount_with_vat === lastSale.amount_with_vat
       );
+      if (permIndex !== -1) {
+        permanentSales.splice(permIndex, 1);
+        setStorage('ventas_permanentes', permanentSales);
+      }
       
-      if (indexInMonth !== -1) {
-        salesMonth.splice(indexInMonth, 1);
+      // Eliminar de ventas del día
+      salesDay.pop();
+      setStorage('ventas_dia', salesDay);
+      
+      // Eliminar de ventas del mes
+      const salesMonth = getStorage('ventas_mes');
+      const monthIndex = salesMonth.findIndex(s => 
+        s.timestamp === lastSale.timestamp && 
+        s.amount_with_vat === lastSale.amount_with_vat
+      );
+      if (monthIndex !== -1) {
+        salesMonth.splice(monthIndex, 1);
         setStorage('ventas_mes', salesMonth);
       }
       
@@ -726,58 +1087,16 @@
     }
 
     function closeDay() {
-      const salesDay = getStorage('ventas_dia');
-      const total_with_vat = round2(salesDay.reduce((sum, s) => sum + s.amount_with_vat, 0));
-      const total_without_vat = round2(salesDay.reduce((sum, s) => sum + s.net_without_vat, 0));
-      const total_commission = round2(salesDay.reduce((sum, s) => sum + s.commission, 0));
-
-      const summary = {
-        day_date: getCurrentDate(),
-        total_with_vat,
-        total_without_vat,
-        total_commission,
-        closed_at: new Date().toISOString()
-      };
-
-      const historyDays = getStorage('historial_dias');
-      historyDays.push(summary);
-      setStorage('historial_dias', historyDays);
       setStorage('ventas_dia', []);
       refreshUI();
-      showToast('✓ Día cerrado correctamente');
+      showToast('✓ Día cerrado. Ventas del día vaciadas.');
     }
 
     function closeMonth() {
-      const salesMonth = getStorage('ventas_mes');
-      const currentMonth = getCurrentMonth();
-      const salesCurrentMonth = salesMonth.filter(s => s.month_id === currentMonth);
-      
-      const total_with_vat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.amount_with_vat, 0));
-      const total_without_vat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.net_without_vat, 0));
-      const total_commission = round2(salesCurrentMonth.reduce((sum, s) => sum + s.commission, 0));
-
-      const summary = {
-        month_id: currentMonth,
-        total_with_vat,
-        total_without_vat,
-        total_commission,
-        closed_at: new Date().toISOString()
-      };
-
-      const historyMonths = getStorage('historial_meses');
-      historyMonths.push(summary);
-      setStorage('historial_meses', historyMonths);
-
-      const remainingSales = salesMonth.filter(s => s.month_id !== currentMonth);
-      setStorage('ventas_mes', remainingSales);
-
-      const historyDays = getStorage('historial_dias');
-      const remainingDays = historyDays.filter(d => !d.day_date.startsWith(currentMonth));
-      setStorage('historial_dias', remainingDays);
-
       setStorage('ventas_dia', []);
+      setStorage('ventas_mes', []);
       refreshUI();
-      showToast('✓ Mes cerrado correctamente');
+      showToast('✓ Mes cerrado. Ventas del día y del mes vaciadas.');
     }
 
     function resetAll() {
@@ -786,8 +1105,7 @@
       }
       setStorage('ventas_dia', []);
       setStorage('ventas_mes', []);
-      setStorage('historial_dias', []);
-      setStorage('historial_meses', []);
+      setStorage('ventas_permanentes', []);
       refreshUI();
       showToast('Sistema reseteado');
     }
@@ -806,57 +1124,57 @@
       
       if (exportType === 'day') {
         dateSelector.style.display = 'block';
-        const historyDays = getStorage('historial_dias');
         const salesDay = getStorage('ventas_dia');
         const today = getCurrentDate();
         
-        // Add today if has sales
         if (salesDay.length > 0) {
           const option = document.createElement('option');
           option.value = today;
           option.textContent = `${today} (Día actual - ${salesDay.length} ventas)`;
           dateSelect.appendChild(option);
-        }
-        
-        // Add closed days
-        historyDays.slice().reverse().forEach(d => {
+        } else {
           const option = document.createElement('option');
-          option.value = d.day_date;
-          option.textContent = `${d.day_date} (Cerrado - ${formatCLP(d.total_commission)} comisión)`;
-          dateSelect.appendChild(option);
-        });
-        
-        if (dateSelect.options.length === 0) {
-          const option = document.createElement('option');
-          option.textContent = 'No hay días con ventas';
+          option.textContent = 'No hay ventas hoy';
           dateSelect.appendChild(option);
         }
       } else if (exportType === 'month') {
         dateSelector.style.display = 'block';
-        const historyMonths = getStorage('historial_meses');
         const salesMonth = getStorage('ventas_mes');
         const currentMonth = getCurrentMonth();
         const currentSales = salesMonth.filter(s => s.month_id === currentMonth);
         
-        // Add current month if has sales
         if (currentSales.length > 0) {
           const option = document.createElement('option');
           option.value = currentMonth;
           option.textContent = `${currentMonth} (Mes actual - ${currentSales.length} ventas)`;
           dateSelect.appendChild(option);
-        }
-        
-        // Add closed months
-        historyMonths.slice().reverse().forEach(m => {
+        } else {
           const option = document.createElement('option');
-          option.value = m.month_id;
-          option.textContent = `${m.month_id} (Cerrado - ${formatCLP(m.total_commission)} comisión)`;
+          option.textContent = 'No hay ventas en el mes actual';
+          dateSelect.appendChild(option);
+        }
+      } else if (exportType === 'permanent') {
+        dateSelector.style.display = 'block';
+        const permanentSales = getStorage('ventas_permanentes');
+        
+        const uniqueMonths = [...new Set(permanentSales.map(s => s.month_id).filter(Boolean))].sort().reverse();
+        
+        const allOption = document.createElement('option');
+        allOption.value = 'all';
+        allOption.textContent = 'Todos los meses';
+        dateSelect.appendChild(allOption);
+        
+        uniqueMonths.forEach(month => {
+          const monthSales = permanentSales.filter(s => s.month_id === month);
+          const option = document.createElement('option');
+          option.value = month;
+          option.textContent = `${month} (${monthSales.length} ventas)`;
           dateSelect.appendChild(option);
         });
         
-        if (dateSelect.options.length === 0) {
+        if (dateSelect.options.length === 1) {
           const option = document.createElement('option');
-          option.textContent = 'No hay meses con ventas';
+          option.textContent = 'No hay ventas en historial permanente';
           dateSelect.appendChild(option);
         }
       } else {
@@ -873,76 +1191,31 @@
       let filename = '';
       
       if (exportType === 'day') {
-        const historyDays = getStorage('historial_dias');
         const salesDay = getStorage('ventas_dia');
         const today = getCurrentDate();
         
         if (selectedDate === today) {
-          // Export current day
           data = salesDay;
           filename = `ventas_dia_${selectedDate}.csv`;
-        } else {
-          // Export closed day - need to get individual sales
-          const dayData = historyDays.find(d => d.day_date === selectedDate);
-          if (dayData) {
-            // Create summary row
-            data = [{
-              timestamp: dayData.closed_at,
-              amount_with_vat: dayData.total_with_vat,
-              net_without_vat: dayData.total_without_vat,
-              commission: dayData.total_commission,
-              date_iso: dayData.day_date,
-              month_id: dayData.day_date.substring(0, 7)
-            }];
-            filename = `resumen_dia_${selectedDate}.csv`;
-          }
         }
       } else if (exportType === 'month') {
         const currentMonth = getCurrentMonth();
         const salesMonth = getStorage('ventas_mes');
-        const historyMonths = getStorage('historial_meses');
         
         if (selectedDate === currentMonth) {
-          // Export current month
           data = salesMonth.filter(s => s.month_id === currentMonth);
           filename = `ventas_mes_${selectedDate}.csv`;
-        } else {
-          // Export closed month - create summary
-          const monthData = historyMonths.find(m => m.month_id === selectedDate);
-          if (monthData) {
-            data = [{
-              timestamp: monthData.closed_at,
-              amount_with_vat: monthData.total_with_vat,
-              net_without_vat: monthData.total_without_vat,
-              commission: monthData.total_commission,
-              date_iso: '',
-              month_id: monthData.month_id
-            }];
-            filename = `resumen_mes_${selectedDate}.csv`;
-          }
         }
-      } else if (exportType === 'history_days') {
-        const historyDays = getStorage('historial_dias');
-        data = historyDays.map(d => ({
-          timestamp: d.closed_at,
-          amount_with_vat: d.total_with_vat,
-          net_without_vat: d.total_without_vat,
-          commission: d.total_commission,
-          date_iso: d.day_date,
-          month_id: d.day_date.substring(0, 7)
-        }));
-        filename = 'historial_dias.csv';
-      } else if (exportType === 'history_months') {
-        const historyMonths = getStorage('historial_meses');
-        data = historyMonths.map(m => ({
-          timestamp: m.closed_at,
-          amount_with_vat: m.total_with_vat,
-          net_without_vat: m.total_without_vat,
-          commission: m.total_commission,
-          date_iso: '',
-          month_id: m.month_id
-        }));
-        filename = 'historial_meses.csv';
+      } else if (exportType === 'permanent') {
+        const permanentSales = getStorage('ventas_permanentes');
+        
+        if (selectedDate === 'all') {
+          data = permanentSales;
+          filename = 'historial_permanente_completo.csv';
+        } else {
+          data = permanentSales.filter(s => s.month_id === selectedDate);
+          filename = `historial_permanente_${selectedDate}.csv`;
+        }
       }
       
       if (data.length === 0) {
@@ -950,7 +1223,6 @@
         return;
       }
       
-      // Create CSV
       let csv = 'Fecha/Hora,Monto con IVA,Neto sin IVA,Comisión,Fecha,Mes\n';
       data.forEach(s => {
         const timestamp = formatDateTimeForExcel(s.timestamp);
@@ -958,7 +1230,6 @@
         csv += `"${timestamp}",${s.amount_with_vat},${s.net_without_vat},${s.commission},"${dateFormatted}","${s.month_id}"\n`;
       });
       
-      // Download
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -969,47 +1240,11 @@
       showToast(`✓ Exportado: ${filename}`);
     }
 
-    // Update export options when type changes
-    document.addEventListener('DOMContentLoaded', () => {
-      const exportTypeSelect = document.getElementById('exportType');
-      if (exportTypeSelect) {
-        exportTypeSelect.addEventListener('change', updateExportOptions);
-      }
-      
-      // Set today as default date for add sale
-      const saleDateInput = document.getElementById('saleDate');
-      if (saleDateInput) {
-        saleDateInput.value = getCurrentDate();
-      }
-      
-      // Format amount input in modify modal
-      const saleAmountInput = document.getElementById('saleAmount');
-      if (saleAmountInput) {
-        saleAmountInput.addEventListener('input', (e) => {
-          let value = e.target.value.replace(/[^0-9]/g, '');
-          if (value) {
-            const cursorPos = e.target.selectionStart;
-            const oldLength = e.target.value.length;
-            const num = parseInt(value);
-            const formatted = '$ ' + num.toLocaleString('es-CL');
-            e.target.value = formatted;
-            const newLength = formatted.length;
-            const diff = newLength - oldLength;
-            e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
-          }
-        });
-      }
-    });
-
-    function showExportModal() {
-      showModal('exportModal');
-      updateExportOptions();
-    }
-
     function showModifyModal() {
       showModal('modifyModal');
       document.getElementById('saleDate').value = getCurrentDate();
       document.getElementById('saleAmount').value = '';
+      document.getElementById('searchQuery').value = '';
       updateModifyAction();
     }
 
@@ -1017,14 +1252,22 @@
       const action = document.getElementById('modifyAction').value;
       const addSection = document.getElementById('addSaleSection');
       const deleteSection = document.getElementById('deleteSaleSection');
+      const searchSection = document.getElementById('searchSaleSection');
       
       if (action === 'add') {
         addSection.style.display = 'block';
         deleteSection.style.display = 'none';
-      } else {
+        searchSection.style.display = 'none';
+      } else if (action === 'delete') {
         addSection.style.display = 'none';
         deleteSection.style.display = 'block';
+        searchSection.style.display = 'none';
         updateDeleteList();
+      } else if (action === 'search') {
+        addSection.style.display = 'none';
+        deleteSection.style.display = 'none';
+        searchSection.style.display = 'block';
+        searchPermanentSales();
       }
     }
 
@@ -1036,10 +1279,12 @@
       let sales = [];
       if (period === 'day') {
         sales = getStorage('ventas_dia');
-      } else {
+      } else if (period === 'month') {
         const currentMonth = getCurrentMonth();
         const allSales = getStorage('ventas_mes');
         sales = allSales.filter(s => s.month_id === currentMonth);
+      } else if (period === 'permanent') {
+        sales = getStorage('ventas_permanentes');
       }
       
       if (sales.length === 0) {
@@ -1060,13 +1305,14 @@
         `;
         
         const time = formatDateTimeForExcel(sale.timestamp);
+        
         div.innerHTML = `
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="flex: 1;">
               <div style="font-weight: 600; color: var(--accent);">${formatCLP(sale.amount_with_vat)}</div>
               <div style="font-size: 12px; color: var(--muted);">${time} | Com: ${formatCLP(sale.commission)}</div>
             </div>
-            <button onclick="deleteSale('${period}', ${index})" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">Eliminar</button>
+            <button onclick="deleteSaleFromPeriod('${period}', ${index})" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">Eliminar</button>
           </div>
         `;
         
@@ -1074,8 +1320,62 @@
       });
     }
 
-    function deleteSale(period, index) {
-      if (!confirm('¿Estás seguro de eliminar esta venta?')) {
+    function searchPermanentSales() {
+      const query = document.getElementById('searchQuery').value.toLowerCase();
+      const container = document.getElementById('searchResults');
+      container.innerHTML = '';
+      
+      const permanentSales = getStorage('ventas_permanentes');
+      
+      if (permanentSales.length === 0) {
+        container.innerHTML = '<div style="padding: 12px; color: var(--muted); text-align: center;">No hay ventas en el historial permanente</div>';
+        return;
+      }
+      
+      let filteredSales = permanentSales;
+      
+      if (query) {
+        filteredSales = permanentSales.filter(sale => {
+          const monthId = sale.month_id || '';
+          const amount = sale.amount_with_vat.toString();
+          const date = sale.date_iso || '';
+          return monthId.toLowerCase().includes(query) || 
+                 amount.includes(query) ||
+                 date.toLowerCase().includes(query);
+        });
+      }
+      
+      if (filteredSales.length === 0) {
+        container.innerHTML = '<div style="padding: 12px; color: var(--muted); text-align: center;">No se encontraron ventas</div>';
+        return;
+      }
+      
+      filteredSales.slice(0, 50).forEach((sale, index) => {
+        const div = document.createElement('div');
+        div.style.cssText = `
+          padding: 12px;
+          margin: 4px 0;
+          background: var(--card);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+        `;
+        
+        const time = formatDateTimeForExcel(sale.timestamp);
+        
+        div.innerHTML = `
+          <div style="flex: 1;">
+            <div style="font-weight: 600; color: var(--accent);">${formatCLP(sale.amount_with_vat)}</div>
+            <div style="font-size: 12px; color: var(--muted);">${time} | Com: ${formatCLP(sale.commission)}</div>
+            <div style="font-size: 11px; color: #666; margin-top: 4px;">Fecha: ${sale.date_iso} | Mes: ${sale.month_id}</div>
+          </div>
+        `;
+        
+        container.appendChild(div);
+      });
+    }
+
+    function deleteSaleFromPeriod(period, index) {
+      if (!confirm('¿Estás seguro de eliminar esta venta? Esta acción no se puede deshacer.')) {
         return;
       }
       
@@ -1085,42 +1385,98 @@
         const salesDay = getStorage('ventas_dia');
         saleToDelete = salesDay[index];
         
-        // Remove from day sales
-        salesDay.splice(index, 1);
-        setStorage('ventas_dia', salesDay);
-        
-        // Remove from month sales
-        const salesMonth = getStorage('ventas_mes');
-        const indexInMonth = salesMonth.findIndex(s => 
+        const permanentSales = getStorage('ventas_permanentes');
+        const permIndex = permanentSales.findIndex(s => 
           s.timestamp === saleToDelete.timestamp && 
           s.amount_with_vat === saleToDelete.amount_with_vat
         );
-        if (indexInMonth !== -1) {
-          salesMonth.splice(indexInMonth, 1);
+        if (permIndex !== -1) {
+          permanentSales.splice(permIndex, 1);
+          setStorage('ventas_permanentes', permanentSales);
+        }
+        
+        salesDay.splice(index, 1);
+        setStorage('ventas_dia', salesDay);
+        
+        const salesMonth = getStorage('ventas_mes');
+        const monthIndex = salesMonth.findIndex(s => 
+          s.timestamp === saleToDelete.timestamp && 
+          s.amount_with_vat === saleToDelete.amount_with_vat
+        );
+        if (monthIndex !== -1) {
+          salesMonth.splice(monthIndex, 1);
           setStorage('ventas_mes', salesMonth);
         }
-      } else {
+        
+      } else if (period === 'month') {
         const currentMonth = getCurrentMonth();
-        const allSales = getStorage('ventas_mes');
-        const monthSales = allSales.filter(s => s.month_id === currentMonth);
+        const salesMonth = getStorage('ventas_mes');
+        const monthSales = salesMonth.filter(s => s.month_id === currentMonth);
         saleToDelete = monthSales[index];
         
-        // Remove from month sales
-        const newAllSales = allSales.filter(s => 
-          !(s.timestamp === saleToDelete.timestamp && 
-            s.amount_with_vat === saleToDelete.amount_with_vat)
+        const permanentSales = getStorage('ventas_permanentes');
+        const permIndex = permanentSales.findIndex(s => 
+          s.timestamp === saleToDelete.timestamp && 
+          s.amount_with_vat === saleToDelete.amount_with_vat
         );
-        setStorage('ventas_mes', newAllSales);
+        if (permIndex !== -1) {
+          permanentSales.splice(permIndex, 1);
+          setStorage('ventas_permanentes', permanentSales);
+        }
         
-        // Remove from day sales if it's today
+        const fullIndex = salesMonth.findIndex(s => 
+          s.timestamp === saleToDelete.timestamp && 
+          s.amount_with_vat === saleToDelete.amount_with_vat
+        );
+        if (fullIndex !== -1) {
+          salesMonth.splice(fullIndex, 1);
+          setStorage('ventas_mes', salesMonth);
+        }
+        
         const today = getCurrentDate();
         if (saleToDelete.date_iso === today) {
-          const daySales = getStorage('ventas_dia');
-          const newDaySales = daySales.filter(s => 
-            !(s.timestamp === saleToDelete.timestamp && 
-              s.amount_with_vat === saleToDelete.amount_with_vat)
+          const salesDay = getStorage('ventas_dia');
+          const dayIndex = salesDay.findIndex(s => 
+            s.timestamp === saleToDelete.timestamp && 
+            s.amount_with_vat === saleToDelete.amount_with_vat
           );
-          setStorage('ventas_dia', newDaySales);
+          if (dayIndex !== -1) {
+            salesDay.splice(dayIndex, 1);
+            setStorage('ventas_dia', salesDay);
+          }
+        }
+        
+      } else if (period === 'permanent') {
+        const permanentSales = getStorage('ventas_permanentes');
+        saleToDelete = permanentSales[index];
+        
+        permanentSales.splice(index, 1);
+        setStorage('ventas_permanentes', permanentSales);
+        
+        const currentMonth = getCurrentMonth();
+        if (saleToDelete.month_id === currentMonth) {
+          const salesMonth = getStorage('ventas_mes');
+          const monthIndex = salesMonth.findIndex(s => 
+            s.timestamp === saleToDelete.timestamp && 
+            s.amount_with_vat === saleToDelete.amount_with_vat
+          );
+          if (monthIndex !== -1) {
+            salesMonth.splice(monthIndex, 1);
+            setStorage('ventas_mes', salesMonth);
+          }
+        }
+        
+        const today = getCurrentDate();
+        if (saleToDelete.date_iso === today) {
+          const salesDay = getStorage('ventas_dia');
+          const dayIndex = salesDay.findIndex(s => 
+            s.timestamp === saleToDelete.timestamp && 
+            s.amount_with_vat === saleToDelete.amount_with_vat
+          );
+          if (dayIndex !== -1) {
+            salesDay.splice(dayIndex, 1);
+            setStorage('ventas_dia', salesDay);
+          }
         }
       }
       
@@ -1151,7 +1507,6 @@
           const net = amt / 1.19;
           const commission = net * COMMISSION_RATE;
           
-          // Use the EXACT date selected by user, with current time
           const now = new Date();
           const selectedDateTime = new Date(dateInput + 'T' + 
             String(now.getHours()).padStart(2, '0') + ':' + 
@@ -1163,16 +1518,21 @@
             net_without_vat: round2(net),
             commission: round2(commission),
             timestamp: selectedDateTime.toISOString(),
-            date_iso: dateInput, // Use EXACT date from input
-            month_id: dateInput.substring(0, 7) // Extract month from selected date
+            date_iso: dateInput,
+            month_id: dateInput.substring(0, 7)
           };
           
-          // Always add to month sales
-          const salesMonth = getStorage('ventas_mes');
-          salesMonth.push(sale);
-          setStorage('ventas_mes', salesMonth);
+          const permanentSales = getStorage('ventas_permanentes');
+          permanentSales.push(sale);
+          setStorage('ventas_permanentes', permanentSales);
           
-          // Only add to day sales if it's TODAY
+          const currentMonth = getCurrentMonth();
+          if (dateInput.substring(0, 7) === currentMonth) {
+            const salesMonth = getStorage('ventas_mes');
+            salesMonth.push(sale);
+            setStorage('ventas_mes', salesMonth);
+          }
+          
           const today = getCurrentDate();
           if (dateInput === today) {
             const salesDay = getStorage('ventas_dia');
@@ -1212,12 +1572,9 @@
 
       renderSalesList('salesDay', salesDay.slice(-20).reverse());
       renderSalesList('salesMonth', salesCurrentMonth.slice(-20).reverse());
-
-      const historyDays = getStorage('historial_dias');
-      renderHistoryDays(historyDays.slice(-20).reverse());
-
-      const historyMonths = getStorage('historial_meses');
-      renderHistoryMonths(historyMonths.slice(-20).reverse());
+      
+      const permanentSales = getStorage('ventas_permanentes');
+      renderPermanentSales(permanentSales.slice(-20).reverse());
 
       renderCharts();
     }
@@ -1234,24 +1591,23 @@
       });
     }
 
-    function renderHistoryDays(days) {
-      const container = document.getElementById('historyDays');
+    function renderPermanentSales(sales) {
+      const container = document.getElementById('permanentSales');
       container.innerHTML = '';
-      days.forEach((d, i) => {
+      
+      if (sales.length === 0) {
         const div = document.createElement('div');
         div.className = 'sale-item';
-        div.textContent = `${i + 1}. ${d.day_date} | ${formatCLP(d.total_with_vat)} | Neto: ${formatCLP(d.total_without_vat)} | Com: ${formatCLP(d.total_commission)}`;
+        div.textContent = 'No hay ventas en el historial permanente';
         container.appendChild(div);
-      });
-    }
-
-    function renderHistoryMonths(months) {
-      const container = document.getElementById('historyMonths');
-      container.innerHTML = '';
-      months.forEach((m, i) => {
+        return;
+      }
+      
+      sales.forEach((s, i) => {
         const div = document.createElement('div');
         div.className = 'sale-item';
-        div.textContent = `${i + 1}. ${m.month_id} | ${formatCLP(m.total_with_vat)} | Neto: ${formatCLP(m.total_without_vat)} | Com: ${formatCLP(m.total_commission)}`;
+        const time = s.timestamp.substring(0, 16).replace('T', ' ');
+        div.textContent = `${i + 1}. ${formatCLP(s.amount_with_vat)} | Com: ${formatCLP(s.commission)} | ${s.date_iso} | ${time}`;
         container.appendChild(div);
       });
     }
@@ -1276,6 +1632,11 @@
       showModal('resetModal');
     }
 
+    function showExportModal() {
+      showModal('exportModal');
+      updateExportOptions();
+    }
+
     function confirmCloseDay() {
       closeDay();
       hideModal('closeDayModal');
@@ -1298,32 +1659,14 @@
 
     function renderDailyChart() {
       const currentMonth = getCurrentMonth();
-      const historyDays = getStorage('historial_dias');
-      
-      // Get closed days for current month
-      const daysInMonth = historyDays.filter(d => d.day_date.startsWith(currentMonth));
-      
-      // Get all sales from current month (including non-closed days)
       const salesMonth = getStorage('ventas_mes');
       const salesCurrentMonth = salesMonth.filter(s => s.month_id === currentMonth);
       
-      // Group sales by day
       const dataMap = {};
       
-      // Add closed days
-      daysInMonth.forEach(d => {
-        const day = parseInt(d.day_date.split('-')[2]);
-        dataMap[day] = (dataMap[day] || 0) + d.total_commission;
-      });
-      
-      // Add sales from non-closed days (including today)
       salesCurrentMonth.forEach(s => {
         const day = parseInt(s.date_iso.split('-')[2]);
-        // Only add if not already counted in closed days
-        const isClosed = daysInMonth.some(d => d.day_date === s.date_iso);
-        if (!isClosed) {
-          dataMap[day] = (dataMap[day] || 0) + s.commission;
-        }
+        dataMap[day] = (dataMap[day] || 0) + s.commission;
       });
 
       const days = Object.keys(dataMap).map(Number).sort((a, b) => a - b);
@@ -1393,33 +1736,14 @@
     }
 
     function renderMonthlyChart() {
-      const historyMonths = getStorage('historial_meses');
       const salesMonth = getStorage('ventas_mes');
       const currentMonth = getCurrentMonth();
       const currentCommission = round2(salesMonth.filter(s => s.month_id === currentMonth).reduce((sum, s) => sum + s.commission, 0));
 
-      const dataMap = {};
-      historyMonths.forEach(m => {
-        dataMap[m.month_id] = (dataMap[m.month_id] || 0) + m.total_commission;
-      });
-
-      if (currentCommission > 0) {
-        dataMap[currentMonth] = (dataMap[currentMonth] || 0) + currentCommission;
-      }
-
-      let months = Object.keys(dataMap).sort();
-      let values = months.map(m => dataMap[m]);
-
-      if (months.length === 0) {
-        months = [currentMonth];
-        values = [0];
-      }
-
       const monthNames = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
-      const labels = months.map(m => {
-        const monthNum = parseInt(m.split('-')[1]);
-        return monthNames[monthNum - 1];
-      });
+      const currentMonthNum = parseInt(currentMonth.split('-')[1]);
+      const labels = [monthNames[currentMonthNum - 1]];
+      const values = [currentCommission];
 
       const ctx = document.getElementById('monthlyChart');
       if (monthlyChartInstance) {
@@ -1479,6 +1803,44 @@
       });
     }
 
+    // ==================== EVENT LISTENERS ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      const saleDateInput = document.getElementById('saleDate');
+      if (saleDateInput) {
+        saleDateInput.value = getCurrentDate();
+      }
+      
+      const searchQueryInput = document.getElementById('searchQuery');
+      if (searchQueryInput) {
+        searchQueryInput.addEventListener('input', searchPermanentSales);
+      }
+      
+      const exportTypeSelect = document.getElementById('exportType');
+      if (exportTypeSelect) {
+        exportTypeSelect.addEventListener('change', updateExportOptions);
+      }
+      
+      const saleAmountInput = document.getElementById('saleAmount');
+      if (saleAmountInput) {
+        saleAmountInput.addEventListener('input', (e) => {
+          let value = e.target.value.replace(/[^0-9]/g, '');
+          if (value) {
+            const cursorPos = e.target.selectionStart;
+            const oldLength = e.target.value.length;
+            const num = parseInt(value);
+            const formatted = '$ ' + num.toLocaleString('es-CL');
+            e.target.value = formatted;
+            const newLength = formatted.length;
+            const diff = newLength - oldLength;
+            e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
+          }
+        });
+      }
+      
+      // Initial load
+      refreshUI();
+    });
+
     // Enter key support
     document.getElementById('amountInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') addSale();
@@ -1491,20 +1853,15 @@
         const cursorPos = e.target.selectionStart;
         const oldLength = e.target.value.length;
         
-        // Format the number
         const num = parseInt(value);
         const formatted = '$ ' + num.toLocaleString('es-CL');
         e.target.value = formatted;
         
-        // Maintain cursor position
         const newLength = formatted.length;
         const diff = newLength - oldLength;
         e.target.setSelectionRange(cursorPos + diff, cursorPos + diff);
       }
     });
-
-    // Initial load
-    refreshUI();
   </script>
 </body>
 </html>
