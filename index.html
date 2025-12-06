@@ -188,7 +188,7 @@
       border-radius: 8px;
       padding: 12px;
       margin-bottom: 20px;
-      max-height: 300px;
+      height: 200px; /* Altura fija para mostrar 4 registros */
       overflow-y: auto;
       border: 1px solid var(--border);
     }
@@ -197,13 +197,17 @@
       content: "(sin ventas)";
       color: var(--muted);
       font-style: italic;
+      display: block;
+      text-align: center;
+      padding: 20px;
     }
     
     .sale-item {
-      padding: 8px;
+      padding: 10px 8px;
       border-bottom: 1px solid var(--border);
       font-size: 13px;
       line-height: 1.6;
+      min-height: 40px; /* Altura aproximada para 4 registros visibles */
     }
     
     .sale-item:last-child {
@@ -417,32 +421,107 @@
       color: var(--text);
     }
     
+    /* ==================== FIX PARA INPUT DATE EN MÓVILES ==================== */
+    input[type="date"] {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      width: 100%;
+      position: relative;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: 0.7;
+      cursor: pointer;
+      padding: 4px;
+      margin-left: 4px;
+    }
+    
+    input[type="date"]::-webkit-inner-spin-button,
+    input[type="date"]::-webkit-clear-button {
+      display: none;
+    }
+    
+    /* Estilo alternativo para móviles */
+    .date-input-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    
+    .date-input-wrapper::after {
+      content: "📅";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--accent);
+      font-size: 16px;
+      pointer-events: none;
+    }
+    
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 36px 12px 12px;
+      font-size: 14px;
+      width: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23f7c600' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
     
+    /* ==================== NUEVO ORDEN DE ELEMENTOS ==================== */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin: 16px 0;
+    }
+    
+    .actions-grid .btn {
+      width: 100%;
+    }
+    
     @media (max-width: 768px) {
       .header h2 { font-size: 18px; }
-      .total-value { font-size: 14px; }
-      .total-label { font-size: 9px; }
+      .total-value { font-size: 16px; }
+      .total-label { font-size: 10px; }
       .btn-container { flex-direction: column; }
       .btn-container .btn { min-width: 100%; }
       .kpi-grid { grid-template-columns: 1fr; }
       .kpi-value { font-size: 16px; }
+      .sales-list { height: 180px; }
+      .actions-grid { grid-template-columns: 1fr; }
     }
     
     @media (max-width: 480px) {
       body { padding: 4px; }
       .header h2 { font-size: 16px; }
-      .total-value { font-size: 13px; }
-      .total-label { font-size: 8px; }
+      .total-value { font-size: 14px; }
+      .total-label { font-size: 9px; }
       .totals-grid { gap: 6px; }
       .modal-content {
         padding: 16px;
         max-width: 95%;
       }
       .kpi-value { font-size: 14px; }
+      .sales-list { height: 160px; }
     }
   </style>
 </head>
@@ -461,6 +540,7 @@
       <p>Sistema de Comisiones</p>
     </div>
 
+    <!-- 1. RESUMEN DE VENTAS -->
     <div class="section-title">📊 Resumen de Ventas</div>
     <div class="totals-grid">
       <div class="total-cell">
@@ -489,6 +569,7 @@
       </div>
     </div>
 
+    <!-- 2. AGREGAR VENTA -->
     <div class="section-title">➕ Agregar Venta</div>
     <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
       Introduce el <strong>monto TOTAL con IVA</strong> (ejemplo: 119000):
@@ -498,21 +579,13 @@
       <button class="btn btn-accent" onclick="addSale()">Agregar</button>
     </div>
     
-    <button class="btn btn-danger" onclick="deleteLastSale()" style="width: 100%; margin-top: 8px;">
+    <button class="btn btn-danger" onclick="deleteLastSale()" style="width: 100%; margin-top: 8px; margin-bottom: 24px;">
       🗑️ Eliminar Última Venta
     </button>
 
-    <div class="section-title">📅 Ventas del Día</div>
-    <div class="sales-list" id="salesDay"></div>
-
-    <div class="section-title">📆 Ventas del Mes</div>
-    <div class="sales-list" id="salesMonth"></div>
-
-    <div class="section-title">📜 Historial Permanente de Ventas</div>
-    <div class="sales-list" id="permanentSales"></div>
-
+    <!-- 3. ACCIONES -->
     <div class="section-title">⚙️ Acciones</div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0;">
+    <div class="actions-grid">
       <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
       <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
       <button class="btn btn-secondary" onclick="showExportModal()">Exportar Excel</button>
@@ -522,13 +595,13 @@
       </button>
     </div>
     
-    <!-- ==================== NUEVO BOTÓN ==================== -->
     <div style="margin: 16px 0;">
       <button class="btn btn-accent" onclick="showAnalysisScreen()" style="width: 100%;">
         📈 Análisis de Ventas
       </button>
     </div>
 
+    <!-- 4. GRÁFICOS -->
     <div class="section-title">📊 Gráficos</div>
     <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
       <h3 style="font-size: 14px; color: var(--accent); margin-bottom: 12px; font-weight: 600;">Comisiones Diarias (Mes Actual)</h3>
@@ -540,6 +613,15 @@
       <canvas id="monthlyChart" style="max-height: 250px;"></canvas>
     </div>
 
+    <!-- 5. VENTAS DEL DÍA (4 registros visibles) -->
+    <div class="section-title">📅 Ventas del Día</div>
+    <div class="sales-list" id="salesDay"></div>
+
+    <!-- 6. VENTAS DEL MES (4 registros visibles) -->
+    <div class="section-title">📆 Ventas del Mes</div>
+    <div class="sales-list" id="salesMonth"></div>
+
+    <!-- 7. RESETEAR SISTEMA -->
     <div class="section-title">🔄 Resetear Sistema</div>
     <p style="color: #dc2626; font-size: 13px; margin-bottom: 12px;">
       ⚠️ <strong>PELIGRO:</strong> Esta acción eliminará TODOS los datos guardados.
@@ -547,7 +629,7 @@
     <button class="btn btn-danger" onclick="showResetModal()">Resetear Todo</button>
   </div>
 
-  <!-- ==================== PANTALLA DE ANÁLISIS (oculta al inicio) ==================== -->
+  <!-- ==================== PANTALLA DE ANÁLISIS ==================== -->
   <div id="analysisScreen" class="analysis-screen">
     <div class="header">
       <h2>Análisis de Ventas</h2>
@@ -631,7 +713,6 @@
       <canvas id="hourlyChart" style="max-height: 200px;"></canvas>
     </div>
 
-    <!-- ==================== BOTÓN VOLVER ==================== -->
     <div style="margin: 24px 0;">
       <button class="btn btn-accent" onclick="showMainScreen()" style="width: 100%;">
         ← Volver a la pantalla principal
@@ -639,7 +720,7 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL SUBIR ARCHIVO (NUEVO) ==================== -->
+  <!-- ==================== MODAL SUBIR ARCHIVO ==================== -->
   <div id="uploadModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
       <div class="modal-title">📁 Subir Archivo CSV</div>
@@ -695,7 +776,7 @@
     </div>
   </div>
 
-  <!-- Modals (sin cambios) -->
+  <!-- Modals -->
   <div id="closeDayModal" class="modal">
     <div class="modal-content">
       <div class="modal-title">¿Confirmar cierre de día?</div>
@@ -770,7 +851,9 @@
 
       <div id="addSaleSection" style="margin: 16px 0;">
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Fecha de la venta:</label>
-        <input type="date" id="saleDate" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+        <div class="date-input-wrapper">
+          <input type="date" id="saleDate" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
+        </div>
         
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Monto con IVA:</label>
         <input type="text" id="saleAmount" placeholder="119000" inputmode="numeric" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; font-size: 14px;">
@@ -931,10 +1014,10 @@
           const dateIso = parseDateOnly(fechaStr);
           const monthId = mesStr;
           
-          // Convertir números
-          const montoConIVA = parseNumber(montoConIVARaw);
-          const netoSinIVA = parseNumber(netoSinIVARaw);
-          const comision = parseNumber(comisionRaw);
+          // Convertir números y redondear a enteros
+          const montoConIVA = Math.round(parseNumber(montoConIVARaw));
+          const netoSinIVA = Math.round(parseNumber(netoSinIVARaw));
+          const comision = Math.round(parseNumber(comisionRaw));
           
           if (timestamp && !isNaN(montoConIVA) && !isNaN(netoSinIVA) && !isNaN(comision) && dateIso && monthId) {
             data.push({
@@ -1134,20 +1217,20 @@
       const weekSales = permanentSales.filter(s => isDateInWeek(s.date_iso, startOfWeek));
       const monthSales = permanentSales.filter(s => s.month_id === currentMonth);
       
-      const dayTotal = daySales.reduce((sum, s) => sum + s.net_without_vat, 0);
+      const dayTotal = Math.round(daySales.reduce((sum, s) => sum + s.net_without_vat, 0));
       const dayCount = daySales.length;
-      const dayAverage = dayCount > 0 ? dayTotal / dayCount : 0;
-      const dayCommission = daySales.reduce((sum, s) => sum + s.commission, 0);
+      const dayAverage = dayCount > 0 ? Math.round(dayTotal / dayCount) : 0;
+      const dayCommission = Math.round(daySales.reduce((sum, s) => sum + s.commission, 0));
       
-      const weekTotal = weekSales.reduce((sum, s) => sum + s.net_without_vat, 0);
+      const weekTotal = Math.round(weekSales.reduce((sum, s) => sum + s.net_without_vat, 0));
       const weekCount = weekSales.length;
-      const weekAverage = weekCount > 0 ? weekTotal / weekCount : 0;
-      const weekCommission = weekSales.reduce((sum, s) => sum + s.commission, 0);
+      const weekAverage = weekCount > 0 ? Math.round(weekTotal / weekCount) : 0;
+      const weekCommission = Math.round(weekSales.reduce((sum, s) => sum + s.commission, 0));
       
-      const monthTotal = monthSales.reduce((sum, s) => sum + s.net_without_vat, 0);
+      const monthTotal = Math.round(monthSales.reduce((sum, s) => sum + s.net_without_vat, 0));
       const monthCount = monthSales.length;
-      const monthAverage = monthCount > 0 ? monthTotal / monthCount : 0;
-      const monthCommission = monthSales.reduce((sum, s) => sum + s.commission, 0);
+      const monthAverage = monthCount > 0 ? Math.round(monthTotal / monthCount) : 0;
+      const monthCommission = Math.round(monthSales.reduce((sum, s) => sum + s.commission, 0));
       
       document.getElementById('kpiDayTotal').textContent = formatCLP(dayTotal);
       document.getElementById('kpiDayCount').textContent = dayCount;
@@ -1201,7 +1284,7 @@
         return hourA - hourB;
       });
       
-      const values = hours.map(hour => hourlyData[hour]);
+      const values = hours.map(hour => Math.round(hourlyData[hour]));
       
       if (hours.length === 0) {
         hours.push('Sin datos');
@@ -1401,7 +1484,8 @@
     }
 
     function round2(x) {
-      return Math.floor(x * 100 + 0.5) / 100;
+      // MODIFICADO: Redondear a número entero
+      return Math.round(x);
     }
 
     function addSale() {
@@ -1410,13 +1494,14 @@
       
       try {
         const amt = parseAmount(amountText);
-        const net = amt / 1.19;
-        const commission = net * COMMISSION_RATE;
+        // MODIFICADO: Redondear a números enteros
+        const net = Math.round(amt / 1.19);
+        const commission = Math.round(net * COMMISSION_RATE);
         
         const sale = {
-          amount_with_vat: round2(amt),
-          net_without_vat: round2(net),
-          commission: round2(commission),
+          amount_with_vat: Math.round(amt), // Entero
+          net_without_vat: net, // Entero
+          commission: commission, // Entero
           timestamp: new Date().toISOString(),
           date_iso: getCurrentDate(),
           month_id: getCurrentMonth()
@@ -1925,8 +2010,9 @@
         
         try {
           const amt = parseAmount(amountInput);
-          const net = amt / 1.19;
-          const commission = net * COMMISSION_RATE;
+          // MODIFICADO: Redondear a números enteros
+          const net = Math.round(amt / 1.19);
+          const commission = Math.round(net * COMMISSION_RATE);
           
           const now = new Date();
           const selectedDateTime = new Date(dateInput + 'T' + 
@@ -1935,9 +2021,9 @@
             String(now.getSeconds()).padStart(2, '0'));
           
           const sale = {
-            amount_with_vat: round2(amt),
-            net_without_vat: round2(net),
-            commission: round2(commission),
+            amount_with_vat: Math.round(amt), // Entero
+            net_without_vat: net, // Entero
+            commission: commission, // Entero
             timestamp: selectedDateTime.toISOString(),
             date_iso: dateInput,
             month_id: dateInput.substring(0, 7)
@@ -1976,13 +2062,14 @@
       const currentMonth = getCurrentMonth();
       const salesCurrentMonth = salesMonth.filter(s => s.month_id === currentMonth);
 
-      const dayWithVat = round2(salesDay.reduce((sum, s) => sum + s.amount_with_vat, 0));
-      const dayWithoutVat = round2(salesDay.reduce((sum, s) => sum + s.net_without_vat, 0));
-      const dayCommission = round2(salesDay.reduce((sum, s) => sum + s.commission, 0));
+      // MODIFICADO: Redondear todos los cálculos a enteros
+      const dayWithVat = Math.round(salesDay.reduce((sum, s) => sum + s.amount_with_vat, 0));
+      const dayWithoutVat = Math.round(salesDay.reduce((sum, s) => sum + s.net_without_vat, 0));
+      const dayCommission = Math.round(salesDay.reduce((sum, s) => sum + s.commission, 0));
 
-      const monthWithVat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.amount_with_vat, 0));
-      const monthWithoutVat = round2(salesCurrentMonth.reduce((sum, s) => sum + s.net_without_vat, 0));
-      const monthCommission = round2(salesCurrentMonth.reduce((sum, s) => sum + s.commission, 0));
+      const monthWithVat = Math.round(salesCurrentMonth.reduce((sum, s) => sum + s.amount_with_vat, 0));
+      const monthWithoutVat = Math.round(salesCurrentMonth.reduce((sum, s) => sum + s.net_without_vat, 0));
+      const monthCommission = Math.round(salesCurrentMonth.reduce((sum, s) => sum + s.commission, 0));
 
       document.getElementById('dayWithVat').textContent = formatCLP(dayWithVat);
       document.getElementById('dayWithoutVat').textContent = formatCLP(dayWithoutVat);
@@ -1993,9 +2080,6 @@
 
       renderSalesList('salesDay', salesDay.slice(-20).reverse());
       renderSalesList('salesMonth', salesCurrentMonth.slice(-20).reverse());
-      
-      const permanentSales = getStorage('ventas_permanentes');
-      renderPermanentSales(permanentSales.slice(-20).reverse());
 
       renderCharts();
     }
@@ -2008,27 +2092,6 @@
         div.className = 'sale-item';
         const time = s.timestamp.substring(0, 16).replace('T', ' ');
         div.textContent = `${i + 1}. ${formatCLP(s.amount_with_vat)} | Neto: ${formatCLP(s.net_without_vat)} | Com: ${formatCLP(s.commission)} | ${time}`;
-        container.appendChild(div);
-      });
-    }
-
-    function renderPermanentSales(sales) {
-      const container = document.getElementById('permanentSales');
-      container.innerHTML = '';
-      
-      if (sales.length === 0) {
-        const div = document.createElement('div');
-        div.className = 'sale-item';
-        div.textContent = 'No hay ventas en el historial permanente';
-        container.appendChild(div);
-        return;
-      }
-      
-      sales.forEach((s, i) => {
-        const div = document.createElement('div');
-        div.className = 'sale-item';
-        const time = s.timestamp.substring(0, 16).replace('T', ' ');
-        div.textContent = `${i + 1}. ${formatCLP(s.amount_with_vat)} | Com: ${formatCLP(s.commission)} | ${s.date_iso} | ${time}`;
         container.appendChild(div);
       });
     }
@@ -2091,7 +2154,7 @@
       });
 
       const days = Object.keys(dataMap).map(Number).sort((a, b) => a - b);
-      const values = days.map(d => dataMap[d]);
+      const values = days.map(d => Math.round(dataMap[d])); // Entero
 
       if (days.length === 0) {
         days.push(1);
@@ -2159,7 +2222,7 @@
     function renderMonthlyChart() {
       const salesMonth = getStorage('ventas_mes');
       const currentMonth = getCurrentMonth();
-      const currentCommission = round2(salesMonth.filter(s => s.month_id === currentMonth).reduce((sum, s) => sum + s.commission, 0));
+      const currentCommission = Math.round(salesMonth.filter(s => s.month_id === currentMonth).reduce((sum, s) => sum + s.commission, 0)); // Entero
 
       const monthNames = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
       const currentMonthNum = parseInt(currentMonth.split('-')[1]);
@@ -2229,6 +2292,8 @@
       const saleDateInput = document.getElementById('saleDate');
       if (saleDateInput) {
         saleDateInput.value = getCurrentDate();
+        // Asegurar que el input de fecha tenga el formato correcto para móviles
+        saleDateInput.type = 'date';
       }
       
       const searchQueryInput = document.getElementById('searchQuery');
