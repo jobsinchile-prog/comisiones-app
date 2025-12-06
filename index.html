@@ -708,7 +708,7 @@
       </div>
     </div>
 
-    <div class="section-title">🕒 Ventas por Hora (Hoy)</div>
+    <div class="section-title">🕒 Ventas por Hora</div>
     <div class="hourly-chart-container">
       <canvas id="hourlyChart" style="max-height: 200px;"></canvas>
     </div>
@@ -1247,7 +1247,8 @@
       document.getElementById('kpiMonthAverage').textContent = formatCLP(monthAverage);
       document.getElementById('kpiMonthCommission').textContent = formatCLP(monthCommission);
       
-      renderHourlyChart(daySales);
+      // MODIFICADO: Ahora pasamos todas las ventas permanentes para el gráfico por hora
+      renderHourlyChart(permanentSales);
     }
 
     // ==================== FUNCIONES AUXILIARES PARA KPIs ====================
@@ -1270,25 +1271,51 @@
       return date >= start && date <= end;
     }
 
-    function renderHourlyChart(daySales) {
+    // ==================== GRÁFICO DE VENTAS POR HORA MODIFICADO ====================
+    function renderHourlyChart(allSales) {
+      // Crear un array para las horas de 8:00 a 20:00
       const hourlyData = {};
-      daySales.forEach(sale => {
-        const hour = new Date(sale.timestamp).getHours();
-        const hourLabel = `${hour}:00`;
-        hourlyData[hourLabel] = (hourlyData[hourLabel] || 0) + sale.net_without_vat;
+      
+      // Inicializar todas las horas de 8 a 20 con valor 0
+      for (let h = 8; h <= 20; h++) {
+        const hourLabel = `${h.toString().padStart(2, '0')}:00`;
+        hourlyData[hourLabel] = 0;
+      }
+      
+      // Procesar todas las ventas
+      allSales.forEach(sale => {
+        const saleDate = new Date(sale.timestamp);
+        const hour = saleDate.getHours();
+        
+        // Solo considerar ventas entre las 8:00 y 20:00
+        if (hour >= 8 && hour <= 20) {
+          const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+          hourlyData[hourLabel] = (hourlyData[hourLabel] || 0) + sale.net_without_vat;
+        }
       });
       
+      // Ordenar las horas
       const hours = Object.keys(hourlyData).sort((a, b) => {
         const hourA = parseInt(a.split(':')[0]);
         const hourB = parseInt(b.split(':')[0]);
         return hourA - hourB;
       });
       
+      // Obtener valores redondeados
       const values = hours.map(hour => Math.round(hourlyData[hour]));
       
-      if (hours.length === 0) {
-        hours.push('Sin datos');
-        values.push(0);
+      // Si no hay datos en ninguna hora, mostrar un mensaje
+      const hasData = values.some(v => v > 0);
+      
+      if (!hasData) {
+        hours.length = 0;
+        values.length = 0;
+        
+        // Mostrar todas las horas con valor 0
+        for (let h = 8; h <= 20; h++) {
+          hours.push(`${h.toString().padStart(2, '0')}:00`);
+          values.push(0);
+        }
       }
       
       const ctx = document.getElementById('hourlyChart');
@@ -1301,7 +1328,7 @@
         data: {
           labels: hours,
           datasets: [{
-            label: 'Ventas por Hora (sin IVA)',
+            label: 'Volumen de Ventas (sin IVA)',
             data: values,
             backgroundColor: '#f7c600',
             borderColor: '#d1a400',
@@ -1319,6 +1346,9 @@
               callbacks: {
                 label: function(context) {
                   return formatCLP(context.parsed.y);
+                },
+                title: function(tooltipItems) {
+                  return `Hora: ${tooltipItems[0].label}`;
                 }
               }
             }
@@ -1326,6 +1356,14 @@
           scales: {
             y: {
               beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Monto ($)',
+                color: '#999999',
+                font: {
+                  size: 12
+                }
+              },
               ticks: {
                 callback: function(value) {
                   return formatCLP(value);
@@ -1337,8 +1375,18 @@
               }
             },
             x: {
+              title: {
+                display: true,
+                text: 'Hora del día',
+                color: '#999999',
+                font: {
+                  size: 12
+                }
+              },
               ticks: {
-                color: '#999999'
+                color: '#999999',
+                maxRotation: 45,
+                minRotation: 45
               },
               grid: {
                 color: '#2a2a2a'
@@ -1588,7 +1636,7 @@
         z-index: 10000;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       `;
-      document.body.appendChild(toast);
+      document.body.appendChild(toot);
       setTimeout(() => toast.remove(), 2000);
     }
 
