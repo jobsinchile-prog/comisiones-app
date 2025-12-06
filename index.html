@@ -498,6 +498,174 @@
       width: 100%;
     }
     
+    /* ==================== ESTILOS PARA CRM ==================== */
+    .tag {
+      display: inline-block;
+      padding: 4px 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    
+    .tag:hover {
+      background: var(--accent);
+      color: #111111;
+      transform: scale(1.05);
+    }
+    
+    .tag.active {
+      background: var(--accent);
+      color: #111111;
+      font-weight: 600;
+    }
+    
+    .prospect-item {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .prospect-item:hover {
+      background: rgba(247, 198, 0, 0.1);
+    }
+    
+    .prospect-info {
+      flex: 1;
+    }
+    
+    .prospect-name {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    
+    .prospect-details {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .prospect-status {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .status-not-contacted {
+      background: #dc2626;
+      color: white;
+    }
+    
+    .status-contacted {
+      background: #10b981;
+      color: white;
+    }
+    
+    .observation-item {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    
+    .observation-date {
+      color: var(--accent);
+      font-size: 10px;
+      margin-bottom: 2px;
+    }
+    
+    .observation-text {
+      color: var(--text);
+    }
+    
+    /* ==================== ESTILOS PARA WHATSAPP ==================== */
+    .btn-whatsapp {
+      background: #25D366;
+      color: white;
+    }
+    
+    .btn-whatsapp:hover {
+      background: #1da851;
+      box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+    }
+    
+    .vendedor-config {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    
+    .vendedor-config h3 {
+      font-size: 16px;
+      color: var(--accent);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .vendedor-config h3::before {
+      content: "👤";
+      font-size: 18px;
+    }
+    
+    .vendedor-input-group {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .vendedor-input-group input {
+      flex: 1;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+    }
+    
+    .vendedor-input-group button {
+      background: var(--accent);
+      color: #111111;
+      border: none;
+      border-radius: 8px;
+      padding: 0 20px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .vendedor-input-group button:hover {
+      background: var(--accent-strong);
+    }
+    
+    .vendedor-current {
+      margin-top: 12px;
+      padding: 10px;
+      background: rgba(247, 198, 0, 0.1);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    
+    .vendedor-current strong {
+      color: var(--accent);
+    }
+    
     @media (max-width: 768px) {
       .header h2 { font-size: 18px; }
       .total-value { font-size: 16px; }
@@ -508,6 +676,8 @@
       .kpi-value { font-size: 16px; }
       .sales-list { height: 180px; }
       .actions-grid { grid-template-columns: 1fr; }
+      .vendedor-input-group { flex-direction: column; }
+      .vendedor-input-group button { width: 100%; padding: 12px; }
     }
     
     @media (max-width: 480px) {
@@ -592,6 +762,9 @@
       <button class="btn btn-accent" onclick="showModifyModal()">Modificar Ventas</button>
       <button class="btn btn-info" onclick="showUploadModal()" style="grid-column: span 2;">
         📁 Subir Archivo CSV
+      </button>
+      <button class="btn btn-info" onclick="showCRMScreen()" style="grid-column: span 2;">
+        👥 Gestión de Prospectos
       </button>
     </div>
     
@@ -720,6 +893,89 @@
     </div>
   </div>
 
+  <!-- ==================== PANTALLA DE CRM ==================== -->
+  <div id="crmScreen" class="analysis-screen">
+    <div class="header">
+      <h2>CRM - Gestión de Prospectos</h2>
+      <p>Base de clientes y seguimiento comercial</p>
+    </div>
+
+    <button class="btn btn-accent" onclick="showMainScreen()" style="width: 100%; margin-bottom: 20px;">
+      ← Volver a la pantalla principal
+    </button>
+
+    <!-- CONFIGURACIÓN DEL VENDEDOR -->
+    <div class="vendedor-config">
+      <h3>Configuración de Mensajes</h3>
+      <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+        En los mensajes a clientes ¿Cómo quieres que aparezca tu nombre?
+      </p>
+      <div class="vendedor-input-group">
+        <input type="text" id="vendedorNombre" placeholder="Ej: Carlos, María, Juan Pérez">
+        <button onclick="guardarNombreVendedor()">Guardar</button>
+      </div>
+      <div class="vendedor-current">
+        <strong>Nombre actual:</strong> <span id="nombreVendedorActual">No configurado</span>
+      </div>
+    </div>
+
+    <!-- ACCIONES RÁPIDAS -->
+    <div class="section-title">⚡ Acciones Rápidas</div>
+    <div class="actions-grid">
+      <button class="btn btn-accent" onclick="showAddProspectModal()">➕ Agregar Prospecto</button>
+      <button class="btn btn-info" onclick="showImportClientModal()">📁 Importar Base</button>
+      <button class="btn btn-secondary" onclick="exportProspects()">📥 Exportar Excel</button>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="section-title">🔍 Filtros y Búsqueda</div>
+    <div style="background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--border);">
+      <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+        <input type="text" id="searchProspect" placeholder="Buscar por nombre o teléfono..." 
+               style="flex: 1; min-width: 200px; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px;"
+               oninput="filterProspects()">
+        <select id="filterStatus" style="min-width: 150px;" onchange="filterProspects()">
+          <option value="">Todos los estados</option>
+          <option value="Falta contactar">Falta contactar</option>
+          <option value="Contactado">Contactado</option>
+        </select>
+        <select id="filterProduct" style="min-width: 150px;" onchange="filterProspects()">
+          <option value="">Todos los productos</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary" onclick="resetFilters()" style="width: 100%;">
+        🔄 Limpiar Filtros
+      </button>
+    </div>
+
+    <!-- LISTADO DE PROSPECTOS -->
+    <div class="section-title">👥 Listado de Prospectos</div>
+    <div class="sales-list" id="prospectList" style="height: 300px;">
+      <!-- Prospectos se cargarán aquí -->
+    </div>
+
+    <!-- ESTADÍSTICAS -->
+    <div class="section-title">📊 Estadísticas</div>
+    <div class="totals-grid">
+      <div class="total-cell">
+        <div class="total-label">Total Prospectos</div>
+        <div class="total-value" id="totalProspects">0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Falta Contactar</div>
+        <div class="total-value" id="pendingProspects">0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Contactados</div>
+        <div class="total-value" id="contactedProspects">0</div>
+      </div>
+      <div class="total-cell">
+        <div class="total-label">Últimos 7 días</div>
+        <div class="total-value" id="recentProspects">0</div>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL SUBIR ARCHIVO ==================== -->
   <div id="uploadModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
@@ -772,6 +1028,178 @@
           📥 Procesar Archivo
         </button>
         <button class="btn btn-secondary" onclick="hideModal('uploadModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL AGREGAR PROSPECTO ==================== -->
+  <div id="addProspectModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-title">➕ Agregar Nuevo Prospecto</div>
+      
+      <div style="margin: 16px 0;">
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Nombre y Apellido:</label>
+        <input type="text" id="prospectName" placeholder="Ej: Juan Pérez" 
+               style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Teléfono:</label>
+        <input type="text" id="prospectPhone" placeholder="Ej: +56912345678" inputmode="tel"
+               style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Producto(s):</label>
+        <input type="text" id="prospectProduct" placeholder="Ej: Neumáticos 185/65R15"
+               style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Estado:</label>
+        <select id="prospectStatus" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
+          <option value="Falta contactar">Falta contactar</option>
+          <option value="Contactado">Contactado</option>
+        </select>
+        
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Observación inicial (opcional):</label>
+        <textarea id="prospectObservation" placeholder="Notas importantes..." rows="3"
+                  style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;"></textarea>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="saveProspect()">💾 Guardar Prospecto</button>
+        <button class="btn btn-secondary" onclick="hideModal('addProspectModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL IMPORTAR CLIENTES ==================== -->
+  <div id="importClientModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-title">📁 Importar Base de Clientes</div>
+      
+      <div style="margin: 16px 0;">
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+          Sube un archivo Excel (.xlsx) o CSV (.csv) con la siguiente estructura:<br>
+          <strong>NombreApellido, Telefono, Producto, Estado, ObservacionInicial, ProximoContacto, Etiqueta</strong><br>
+          <em>Estado debe ser "Falta contactar" o "Contactado". ProximoContacto en formato DD/MM/AAAA.</em>
+        </p>
+        
+        <div class="file-upload-container">
+          <div class="file-input-wrapper">
+            <button class="file-input-button">📂 Seleccionar archivo Excel/CSV</button>
+            <input type="file" id="clientFile" accept=".csv,.xlsx,.xls,.text/csv" onchange="handleClientFileSelect(event)">
+          </div>
+          <div id="clientFileName" class="file-name">No se ha seleccionado ningún archivo</div>
+        </div>
+        
+        <div id="clientFilePreview" class="upload-preview" style="display: none; max-height: 300px;">
+          <h4 style="color: var(--accent); margin-bottom: 8px; font-size: 14px;">Vista previa (primeras 10 filas):</h4>
+          <table id="clientPreviewTable">
+            <thead>
+              <tr>
+                <th>NombreApellido</th>
+                <th>Telefono</th>
+                <th>Producto</th>
+                <th>Estado</th>
+                <th>ObservacionInicial</th>
+                <th>ProximoContacto</th>
+                <th>Etiqueta</th>
+              </tr>
+            </thead>
+            <tbody id="clientPreviewBody">
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="clientUploadStats" style="margin-top: 12px; display: none;">
+          <div style="color: var(--accent); font-weight: 600; margin-bottom: 4px;">Resumen de importación:</div>
+          <div style="font-size: 12px; color: var(--muted);">
+            • Total de registros: <span id="clientTotalRecords">0</span><br>
+            • Válidos para importar: <span id="clientValidRecords">0</span><br>
+            • Duplicados (mismo teléfono): <span id="clientDuplicateRecords">0</span><br>
+            • Ignorados (datos faltantes): <span id="clientIgnoredRecords">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="processClientFile()" id="processClientBtn" disabled>
+          📥 Confirmar Importación
+        </button>
+        <button class="btn btn-secondary" onclick="hideModal('importClientModal')">✗ Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL DETALLE PROSPECTO ==================== -->
+  <div id="prospectDetailModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-title" id="detailProspectName"></div>
+      
+      <div style="margin: 16px 0;">
+        <div style="background: var(--card); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+          <!-- SECCIÓN MODIFICADA: AHORA CON BOTÓN DE WHATSAPP -->
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <div style="font-weight: 600; color: var(--accent); margin-right: 8px;">📞 Teléfono:</div>
+            <div id="detailProspectPhone" style="flex: 1;"></div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-accent" onclick="callProspect()" style="padding: 6px 12px; font-size: 12px;">
+                📞 Llamar
+              </button>
+              <button class="btn btn-whatsapp" onclick="openWhatsApp()" style="padding: 6px 12px; font-size: 12px;">
+                💬 WhatsApp
+              </button>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 600; color: var(--accent);">📦 Producto(s):</div>
+            <div id="detailProspectProduct"></div>
+          </div>
+          
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 600; color: var(--accent);">📊 Estado:</div>
+            <select id="detailProspectStatus" style="width: 100%; margin-top: 4px;">
+              <option value="Falta contactar">Falta contactar</option>
+              <option value="Contactado">Contactado</option>
+            </select>
+          </div>
+          
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 600; color: var(--accent);">📅 Próximo contacto:</div>
+            <input type="date" id="detailProspectNextContact" style="width: 100%; margin-top: 4px;">
+          </div>
+          
+          <div style="margin-bottom: 8px;">
+            <div style="font-weight: 600; color: var(--accent);">🏷️ Etiquetas rápidas:</div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+              <span class="tag" data-tag="Frío">❄️ Frío</span>
+              <span class="tag" data-tag="Tibio">🌤️ Tibio</span>
+              <span class="tag" data-tag="Caliente">🔥 Caliente</span>
+              <span class="tag" data-tag="Quiere cotización">💰 Cotización</span>
+              <span class="tag" data-tag="Agenda visita">📅 Visita</span>
+              <span class="tag" data-tag="Interesado en crédito">💳 Crédito</span>
+            </div>
+            <div id="detailProspectTags" style="margin-top: 8px;"></div>
+          </div>
+        </div>
+        
+        <div style="background: var(--card); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 600; color: var(--accent); margin-bottom: 8px;">📝 Historial de Observaciones:</div>
+          <div id="detailProspectObservations" style="max-height: 200px; overflow-y: auto;">
+            <!-- Observaciones se cargarán aquí -->
+          </div>
+          
+          <div style="margin-top: 12px;">
+            <textarea id="newObservation" placeholder="Agregar nueva observación..." rows="2"
+                      style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 8px;"></textarea>
+            <button class="btn btn-accent" onclick="addObservation()" style="width: 100%; padding: 8px;">
+              ➕ Agregar Observación
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="saveProspectChanges()">💾 Guardar Cambios</button>
+        <button class="btn btn-danger" onclick="confirmDeleteProspect()">🗑️ Eliminar</button>
+        <button class="btn btn-secondary" onclick="hideModal('prospectDetailModal')">✗ Cerrar</button>
       </div>
     </div>
   </div>
@@ -901,20 +1329,673 @@
     let selectedFile = null;
     let csvData = [];
 
+    // ==================== FUNCIONES PARA WHATSAPP Y NOMBRE VENDEDOR ====================
+    function guardarNombreVendedor() {
+      const nombreInput = document.getElementById('vendedorNombre');
+      const nombre = nombreInput.value.trim();
+      
+      if (!nombre) {
+        alert('Por favor ingresa tu nombre.');
+        return;
+      }
+      
+      localStorage.setItem('nombre_vendedor', nombre);
+      actualizarNombreVendedor();
+      nombreInput.value = '';
+      showToast('✅ Nombre guardado correctamente');
+    }
+    
+    function obtenerNombreVendedor() {
+      return localStorage.getItem('nombre_vendedor') || 'Vendedor';
+    }
+    
+    function actualizarNombreVendedor() {
+      const nombre = obtenerNombreVendedor();
+      document.getElementById('nombreVendedorActual').textContent = nombre;
+    }
+    
+    function openWhatsApp() {
+      const phone = document.getElementById('detailProspectPhone').textContent;
+      const prospectName = document.getElementById('detailProspectName').textContent;
+      const product = document.getElementById('detailProspectProduct').textContent;
+      const vendedorNombre = obtenerNombreVendedor();
+      
+      // Limpiar número de teléfono (eliminar espacios, guiones, etc.)
+      const cleanPhone = phone.replace(/\D/g, '');
+      
+      // Mensaje predefinido que incluye nombre del cliente, vendedor y producto
+      const message = encodeURIComponent(`Hola ${prospectName}, soy ${vendedorNombre} de Neumáticos y Llantas del Pacífico. Te contacto por tu interés en ${product}. ¿En qué puedo ayudarte?`);
+      
+      // Abrir WhatsApp directamente en la aplicación del celular
+      window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+    }
+
     // ==================== FUNCIONES PARA CAMBIAR PANTALLAS ====================
     function showMainScreen() {
       document.getElementById('mainScreen').style.display = 'block';
       document.getElementById('analysisScreen').classList.remove('active');
+      document.getElementById('crmScreen').classList.remove('active');
       refreshUI();
     }
 
     function showAnalysisScreen() {
       document.getElementById('mainScreen').style.display = 'none';
       document.getElementById('analysisScreen').classList.add('active');
+      document.getElementById('crmScreen').classList.remove('active');
       calculateAndDisplayKPIs();
     }
 
-    // ==================== FUNCIONES PARA SUBIR ARCHIVOS CSV ====================
+    function showCRMScreen() {
+      document.getElementById('mainScreen').style.display = 'none';
+      document.getElementById('analysisScreen').classList.remove('active');
+      document.getElementById('crmScreen').classList.add('active');
+      loadProspects();
+      updateProspectStats();
+      actualizarNombreVendedor(); // Actualizar el nombre del vendedor al mostrar CRM
+    }
+
+    // ==================== FUNCIONES PARA PROSPECTOS ====================
+    // Variables para CRM
+    let currentProspectId = null;
+    let clientFileData = [];
+    let clientFileHeaders = [];
+
+    function getProspectsStorage() {
+      try {
+        const data = localStorage.getItem('prospectos');
+        return data ? JSON.parse(data) : [];
+      } catch (e) {
+        console.error('Error leyendo prospectos:', e);
+        return [];
+      }
+    }
+
+    function setProspectsStorage(prospects) {
+      try {
+        localStorage.setItem('prospectos', JSON.stringify(prospects));
+        return true;
+      } catch (e) {
+        console.error('Error guardando prospectos:', e);
+        alert('Error al guardar. Verifica el espacio disponible.');
+        return false;
+      }
+    }
+
+    function generateProspectId() {
+      return 'prospect_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    function showAddProspectModal() {
+      document.getElementById('prospectName').value = '';
+      document.getElementById('prospectPhone').value = '';
+      document.getElementById('prospectProduct').value = '';
+      document.getElementById('prospectStatus').value = 'Falta contactar';
+      document.getElementById('prospectObservation').value = '';
+      showModal('addProspectModal');
+    }
+
+    function saveProspect() {
+      const name = document.getElementById('prospectName').value.trim();
+      const phone = document.getElementById('prospectPhone').value.trim();
+      const product = document.getElementById('prospectProduct').value.trim();
+      const status = document.getElementById('prospectStatus').value;
+      const observation = document.getElementById('prospectObservation').value.trim();
+      
+      if (!name || !phone || !product) {
+        alert('Por favor completa los campos obligatorios: Nombre, Teléfono y Producto.');
+        return;
+      }
+      
+      const prospects = getProspectsStorage();
+      
+      // Verificar si ya existe un prospecto con el mismo teléfono
+      const existingProspect = prospects.find(p => p.telefono === phone);
+      if (existingProspect) {
+        alert('Ya existe un prospecto con este número de teléfono.');
+        return;
+      }
+      
+      const newProspect = {
+        id: generateProspectId(),
+        nombre: name,
+        telefono: phone,
+        producto: product,
+        estado: status,
+        etiquetas: [],
+        observaciones: [],
+        fechaCreacion: new Date().toISOString(),
+        fechaActualizacion: new Date().toISOString()
+      };
+      
+      if (observation) {
+        newProspect.observaciones.push({
+          fecha: new Date().toISOString(),
+          texto: observation
+        });
+      }
+      
+      prospects.push(newProspect);
+      setProspectsStorage(prospects);
+      
+      hideModal('addProspectModal');
+      loadProspects();
+      updateProspectStats();
+      showToast('✅ Prospecto guardado correctamente');
+    }
+
+    function loadProspects() {
+      const prospects = getProspectsStorage();
+      const container = document.getElementById('prospectList');
+      
+      if (prospects.length === 0) {
+        container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted); font-style: italic;">No hay prospectos registrados.</div>';
+        return;
+      }
+      
+      // Actualizar lista de productos para filtro
+      updateProductFilter(prospects);
+      
+      // Aplicar filtros
+      const searchTerm = document.getElementById('searchProspect')?.value.toLowerCase() || '';
+      const filterStatus = document.getElementById('filterStatus')?.value || '';
+      const filterProduct = document.getElementById('filterProduct')?.value || '';
+      
+      let filteredProspects = prospects;
+      
+      if (searchTerm) {
+        filteredProspects = filteredProspects.filter(p => 
+          p.nombre.toLowerCase().includes(searchTerm) || 
+          p.telefono.includes(searchTerm)
+        );
+      }
+      
+      if (filterStatus) {
+        filteredProspects = filteredProspects.filter(p => p.estado === filterStatus);
+      }
+      
+      if (filterProduct) {
+        filteredProspects = filteredProspects.filter(p => p.producto === filterProduct);
+      }
+      
+      container.innerHTML = '';
+      
+      filteredProspects.forEach(prospect => {
+        const div = document.createElement('div');
+        div.className = 'prospect-item';
+        div.onclick = () => showProspectDetail(prospect.id);
+        
+        const statusClass = prospect.estado === 'Contactado' ? 'status-contacted' : 'status-not-contacted';
+        const lastObservation = prospect.observaciones.length > 0 
+          ? prospect.observaciones[prospect.observaciones.length - 1].texto 
+          : 'Sin observaciones';
+        
+        div.innerHTML = `
+          <div class="prospect-info">
+            <div class="prospect-name">${prospect.nombre}</div>
+            <div class="prospect-details">
+              <span>📞 ${prospect.telefono}</span>
+              <span>📦 ${prospect.producto}</span>
+              <span class="prospect-status ${statusClass}">${prospect.estado}</span>
+              <span>📝 ${lastObservation.substring(0, 30)}${lastObservation.length > 30 ? '...' : ''}</span>
+            </div>
+          </div>
+          <div style="color: var(--muted); font-size: 12px;">
+            👁️ Ver
+          </div>
+        `;
+        
+        container.appendChild(div);
+      });
+    }
+
+    function updateProductFilter(prospects) {
+      const filterProduct = document.getElementById('filterProduct');
+      if (!filterProduct) return;
+      
+      const products = [...new Set(prospects.map(p => p.producto).filter(p => p))];
+      
+      filterProduct.innerHTML = '<option value="">Todos los productos</option>';
+      products.forEach(product => {
+        const option = document.createElement('option');
+        option.value = product;
+        option.textContent = product;
+        filterProduct.appendChild(option);
+      });
+    }
+
+    function filterProspects() {
+      loadProspects();
+      updateProspectStats();
+    }
+
+    function resetFilters() {
+      document.getElementById('searchProspect').value = '';
+      document.getElementById('filterStatus').value = '';
+      document.getElementById('filterProduct').value = '';
+      loadProspects();
+      updateProspectStats();
+    }
+
+    function updateProspectStats() {
+      const prospects = getProspectsStorage();
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const total = prospects.length;
+      const pending = prospects.filter(p => p.estado === 'Falta contactar').length;
+      const contacted = prospects.filter(p => p.estado === 'Contactado').length;
+      const recent = prospects.filter(p => new Date(p.fechaCreacion) > sevenDaysAgo).length;
+      
+      document.getElementById('totalProspects').textContent = total;
+      document.getElementById('pendingProspects').textContent = pending;
+      document.getElementById('contactedProspects').textContent = contacted;
+      document.getElementById('recentProspects').textContent = recent;
+    }
+
+    function showProspectDetail(id) {
+      const prospects = getProspectsStorage();
+      const prospect = prospects.find(p => p.id === id);
+      
+      if (!prospect) {
+        alert('Prospecto no encontrado.');
+        return;
+      }
+      
+      currentProspectId = id;
+      
+      document.getElementById('detailProspectName').textContent = prospect.nombre;
+      document.getElementById('detailProspectPhone').textContent = prospect.telefono;
+      document.getElementById('detailProspectProduct').textContent = prospect.producto;
+      document.getElementById('detailProspectStatus').value = prospect.estado;
+      document.getElementById('detailProspectNextContact').value = prospect.proximoContacto || '';
+      
+      // Cargar etiquetas
+      const tagsContainer = document.getElementById('detailProspectTags');
+      tagsContainer.innerHTML = '';
+      if (prospect.etiquetas && prospect.etiquetas.length > 0) {
+        prospect.etiquetas.forEach(tag => {
+          const span = document.createElement('span');
+          span.className = 'tag active';
+          span.textContent = tag;
+          span.style.marginRight = '4px';
+          span.style.marginBottom = '4px';
+          tagsContainer.appendChild(span);
+        });
+      }
+      
+      // Cargar observaciones
+      const obsContainer = document.getElementById('detailProspectObservations');
+      obsContainer.innerHTML = '';
+      
+      if (prospect.observaciones.length === 0) {
+        obsContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--muted); font-style: italic;">No hay observaciones registradas.</div>';
+      } else {
+        // Mostrar observaciones más recientes primero
+        [...prospect.observaciones].reverse().forEach(obs => {
+          const div = document.createElement('div');
+          div.className = 'observation-item';
+          const date = new Date(obs.fecha);
+          div.innerHTML = `
+            <div class="observation-date">${date.toLocaleString('es-CL')}</div>
+            <div class="observation-text">${obs.texto}</div>
+          `;
+          obsContainer.appendChild(div);
+        });
+      }
+      
+      // Configurar eventos para etiquetas rápidas
+      document.querySelectorAll('.tag[data-tag]').forEach(tag => {
+        tag.onclick = function() {
+          const tagText = this.getAttribute('data-tag');
+          addTagToProspect(tagText);
+        };
+      });
+      
+      showModal('prospectDetailModal');
+    }
+
+    function addTagToProspect(tag) {
+      if (!currentProspectId) return;
+      
+      const prospects = getProspectsStorage();
+      const index = prospects.findIndex(p => p.id === currentProspectId);
+      
+      if (index === -1) return;
+      
+      if (!prospects[index].etiquetas) {
+        prospects[index].etiquetas = [];
+      }
+      
+      if (!prospects[index].etiquetas.includes(tag)) {
+        prospects[index].etiquetas.push(tag);
+        setProspectsStorage(prospects);
+        showProspectDetail(currentProspectId); // Recargar
+        showToast(`🏷️ Etiqueta "${tag}" agregada`);
+      }
+    }
+
+    function addObservation() {
+      const textarea = document.getElementById('newObservation');
+      const text = textarea.value.trim();
+      
+      if (!text) {
+        alert('Por favor escribe una observación.');
+        return;
+      }
+      
+      if (!currentProspectId) return;
+      
+      const prospects = getProspectsStorage();
+      const index = prospects.findIndex(p => p.id === currentProspectId);
+      
+      if (index === -1) return;
+      
+      if (!prospects[index].observaciones) {
+        prospects[index].observaciones = [];
+      }
+      
+      prospects[index].observaciones.push({
+        fecha: new Date().toISOString(),
+        texto: text
+      });
+      
+      prospects[index].fechaActualizacion = new Date().toISOString();
+      
+      setProspectsStorage(prospects);
+      textarea.value = '';
+      showProspectDetail(currentProspectId); // Recargar
+      showToast('✅ Observación agregada');
+    }
+
+    function saveProspectChanges() {
+      if (!currentProspectId) return;
+      
+      const prospects = getProspectsStorage();
+      const index = prospects.findIndex(p => p.id === currentProspectId);
+      
+      if (index === -1) return;
+      
+      prospects[index].estado = document.getElementById('detailProspectStatus').value;
+      prospects[index].proximoContacto = document.getElementById('detailProspectNextContact').value;
+      prospects[index].fechaActualizacion = new Date().toISOString();
+      
+      setProspectsStorage(prospects);
+      hideModal('prospectDetailModal');
+      loadProspects();
+      updateProspectStats();
+      showToast('✅ Cambios guardados');
+    }
+
+    function callProspect() {
+      const phone = document.getElementById('detailProspectPhone').textContent;
+      const cleanPhone = phone.replace(/\D/g, '');
+      window.open(`tel:${cleanPhone}`, '_blank');
+    }
+
+    function confirmDeleteProspect() {
+      if (!confirm('¿Está seguro de eliminar este prospecto y su historial? Esta acción no se puede deshacer.')) {
+        return;
+      }
+      
+      deleteProspect();
+    }
+
+    function deleteProspect() {
+      if (!currentProspectId) return;
+      
+      const prospects = getProspectsStorage();
+      const filtered = prospects.filter(p => p.id !== currentProspectId);
+      
+      setProspectsStorage(filtered);
+      hideModal('prospectDetailModal');
+      loadProspects();
+      updateProspectStats();
+      showToast('🗑️ Prospecto eliminado');
+    }
+
+    // ==================== FUNCIONES PARA IMPORTAR CLIENTES ====================
+    function showImportClientModal() {
+      showModal('importClientModal');
+      resetClientImportForm();
+    }
+
+    function resetClientImportForm() {
+      document.getElementById('clientFile').value = '';
+      document.getElementById('clientFileName').textContent = 'No se ha seleccionado ningún archivo';
+      document.getElementById('clientFilePreview').style.display = 'none';
+      document.getElementById('clientUploadStats').style.display = 'none';
+      document.getElementById('processClientBtn').disabled = true;
+      clientFileData = [];
+      clientFileHeaders = [];
+    }
+
+    function handleClientFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        resetClientImportForm();
+        return;
+      }
+      
+      clientFileData = [];
+      document.getElementById('clientFileName').textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+      
+      const reader = new FileReader();
+      
+      if (file.name.endsWith('.csv')) {
+        reader.onload = function(e) {
+          try {
+            parseCSVData(e.target.result);
+          } catch (error) {
+            alert('Error al leer el archivo CSV: ' + error.message);
+            resetClientImportForm();
+          }
+        };
+        reader.readAsText(file, 'UTF-8');
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        alert('⚠️ Importación de Excel requiere la biblioteca SheetJS. Para esta versión, por favor convierte tu archivo a CSV.');
+        resetClientImportForm();
+        return;
+      } else {
+        alert('Formato de archivo no soportado. Use CSV o Excel.');
+        resetClientImportForm();
+        return;
+      }
+    }
+
+    function parseCSVData(content) {
+      const lines = content.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length === 0) {
+        alert('El archivo CSV está vacío.');
+        resetClientImportForm();
+        return;
+      }
+      
+      // Leer encabezados
+      const headers = lines[0].split(',').map(h => h.trim());
+      clientFileHeaders = headers;
+      
+      // Verificar encabezados obligatorios
+      const requiredHeaders = ['NombreApellido', 'Telefono', 'Producto', 'Estado'];
+      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+      
+      if (missingHeaders.length > 0) {
+        alert(`Faltan los siguientes encabezados obligatorios: ${missingHeaders.join(', ')}`);
+        resetClientImportForm();
+        return;
+      }
+      
+      // Parsear datos
+      const data = [];
+      let validRows = 0;
+      let ignoredRows = 0;
+      
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const cells = line.split(',').map(c => c.trim());
+        const row = {};
+        
+        headers.forEach((header, index) => {
+          row[header] = cells[index] || '';
+        });
+        
+        // Validar datos mínimos
+        if (!row.NombreApellido || !row.Telefono || !row.Producto || !row.Estado) {
+          ignoredRows++;
+          continue;
+        }
+        
+        // Validar estado
+        if (row.Estado !== 'Falta contactar' && row.Estado !== 'Contactado') {
+          ignoredRows++;
+          continue;
+        }
+        
+        data.push(row);
+        validRows++;
+      }
+      
+      clientFileData = data;
+      
+      // Mostrar vista previa
+      showClientPreview(data.slice(0, 10));
+      
+      // Calcular duplicados
+      const existingProspects = getProspectsStorage();
+      const duplicateRows = data.filter(row => 
+        existingProspects.some(p => p.telefono === row.Telefono)
+      ).length;
+      
+      showClientUploadStats(data.length, validRows, duplicateRows, ignoredRows);
+      document.getElementById('processClientBtn').disabled = false;
+    }
+
+    function showClientPreview(data) {
+      const previewBody = document.getElementById('clientPreviewBody');
+      previewBody.innerHTML = '';
+      
+      data.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.NombreApellido || ''}</td>
+          <td>${row.Telefono || ''}</td>
+          <td>${row.Producto || ''}</td>
+          <td>${row.Estado || ''}</td>
+          <td>${row.ObservacionInicial || ''}</td>
+          <td>${row.ProximoContacto || ''}</td>
+          <td>${row.Etiqueta || ''}</td>
+        `;
+        previewBody.appendChild(tr);
+      });
+      
+      document.getElementById('clientFilePreview').style.display = 'block';
+    }
+
+    function showClientUploadStats(total, valid, duplicate, ignored) {
+      document.getElementById('clientTotalRecords').textContent = total;
+      document.getElementById('clientValidRecords').textContent = valid;
+      document.getElementById('clientDuplicateRecords').textContent = duplicate;
+      document.getElementById('clientIgnoredRecords').textContent = ignored;
+      
+      document.getElementById('clientUploadStats').style.display = 'block';
+    }
+
+    function processClientFile() {
+      if (clientFileData.length === 0) {
+        alert('No hay datos para procesar.');
+        return;
+      }
+      
+      const prospects = getProspectsStorage();
+      let imported = 0;
+      let duplicates = 0;
+      let ignored = 0;
+      
+      clientFileData.forEach(row => {
+        // Verificar duplicado por teléfono
+        const existingProspect = prospects.find(p => p.telefono === row.Telefono);
+        if (existingProspect) {
+          duplicates++;
+          return;
+        }
+        
+        // Validar datos mínimos
+        if (!row.NombreApellido || !row.Telefono || !row.Producto || !row.Estado) {
+          ignored++;
+          return;
+        }
+        
+        const newProspect = {
+          id: generateProspectId(),
+          nombre: row.NombreApellido,
+          telefono: row.Telefono,
+          producto: row.Producto,
+          estado: row.Estado,
+          etiquetas: row.Etiqueta ? [row.Etiqueta] : [],
+          proximoContacto: row.ProximoContacto || '',
+          observaciones: [],
+          fechaCreacion: new Date().toISOString(),
+          fechaActualizacion: new Date().toISOString()
+        };
+        
+        if (row.ObservacionInicial) {
+          newProspect.observaciones.push({
+            fecha: new Date().toISOString(),
+            texto: row.ObservacionInicial
+          });
+        }
+        
+        prospects.push(newProspect);
+        imported++;
+      });
+      
+      setProspectsStorage(prospects);
+      
+      let message = `✅ Importación completada:\n\n`;
+      message += `• Registros en archivo: ${clientFileData.length}\n`;
+      message += `• Nuevos prospectos: ${imported}\n`;
+      message += `• Duplicados omitidos: ${duplicates}\n`;
+      message += `• Registros ignorados: ${ignored}`;
+      
+      alert(message);
+      hideModal('importClientModal');
+      loadProspects();
+      updateProspectStats();
+      showToast(`📥 ${imported} prospectos importados`);
+    }
+
+    // ==================== FUNCIÓN PARA EXPORTAR PROSPECTOS ====================
+    function exportProspects() {
+      const prospects = getProspectsStorage();
+      
+      if (prospects.length === 0) {
+        alert('No hay prospectos para exportar.');
+        return;
+      }
+      
+      let csv = 'NombreApellido,Telefono,Producto,Estado,Etiquetas,ProximoContacto,Observaciones,FechaCreacion\n';
+      
+      prospects.forEach(p => {
+        const etiquetas = p.etiquetas ? p.etiquetas.join(';') : '';
+        const observaciones = p.observaciones ? p.observaciones.map(o => 
+          `[${new Date(o.fecha).toLocaleString('es-CL')}] ${o.texto}`
+        ).join(' | ') : '';
+        
+        csv += `"${p.nombre}","${p.telefono}","${p.producto}","${p.estado}","${etiquetas}","${p.proximoContacto || ''}","${observaciones}","${new Date(p.fechaCreacion).toLocaleString('es-CL')}"\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `prospectos_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      
+      showToast(`📤 ${prospects.length} prospectos exportados`);
+    }
+
+    // ==================== FUNCIONES EXISTENTES (SIN CAMBIOS) ====================
     function showUploadModal() {
       showModal('uploadModal');
       resetUploadForm();
@@ -1636,7 +2717,7 @@
         z-index: 10000;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       `;
-      document.body.appendChild(toot);
+      document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 2000);
     }
 
@@ -2371,7 +3452,18 @@
         });
       }
       
+      // Configurar búsqueda de prospectos
+      const searchProspectInput = document.getElementById('searchProspect');
+      if (searchProspectInput) {
+        searchProspectInput.addEventListener('input', filterProspects);
+      }
+      
+      // Cargar nombre del vendedor al iniciar
+      actualizarNombreVendedor();
+      
       refreshUI();
+      // Inicializar estadísticas de prospectos si estamos en la pantalla de CRM
+      updateProspectStats();
     });
 
     document.getElementById('amountInput').addEventListener('keypress', (e) => {
