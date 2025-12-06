@@ -1352,12 +1352,12 @@
 
     // ==================== FUNCIONES PARA ACTUALIZACIÓN AUTOMÁTICA DE ESTADOS ====================
     function updateContactStatus(contactType) {
-      if (!currentProspectId) return;
+      if (!currentProspectId) return null;
       
       const prospects = getProspectsStorage();
       const index = prospects.findIndex(p => p.id === currentProspectId);
       
-      if (index === -1) return;
+      if (index === -1) return null;
       
       const currentStatus = prospects[index].estado;
       let newStatus = currentStatus;
@@ -1404,15 +1404,17 @@
           texto: observationText
         });
         
-        setProspectsStorage(prospects);
+        const saved = setProspectsStorage(prospects);
         
-        // Actualizar la interfaz si el modal está abierto
-        if (document.getElementById('prospectDetailModal').classList.contains('active')) {
-          document.getElementById('detailProspectStatus').value = newStatus;
+        if (saved) {
+          // Actualizar la interfaz si el modal está abierto
+          if (document.getElementById('prospectDetailModal').classList.contains('active')) {
+            document.getElementById('detailProspectStatus').value = newStatus;
+          }
+          
+          // Mostrar notificación
+          showToast(`✅ Estado actualizado a: ${newStatus}`);
         }
-        
-        // Mostrar notificación
-        showToast(`✅ Estado actualizado a: ${newStatus}`);
       }
       
       return newStatus;
@@ -1443,6 +1445,7 @@
       document.getElementById('nombreVendedorActual').textContent = nombre;
     }
     
+    // ==================== FUNCIONES CORREGIDAS PARA MÓVILES ====================
     function openWhatsApp() {
       const phone = document.getElementById('detailProspectPhone').textContent;
       const prospectName = document.getElementById('detailProspectName').textContent;
@@ -1452,24 +1455,75 @@
       // Limpiar número de teléfono (eliminar espacios, guiones, etc.)
       const cleanPhone = phone.replace(/\D/g, '');
       
+      // Validar que el número tenga el formato correcto
+      if (!cleanPhone || cleanPhone.length < 9) {
+        alert('Número de teléfono inválido');
+        return;
+      }
+      
+      // Actualizar estado automáticamente ANTES de abrir WhatsApp
+      updateContactStatus('whatsapp');
+      
       // Mensaje predefinido que incluye nombre del cliente, vendedor y producto
       const message = encodeURIComponent(`Hola ${prospectName}, soy ${vendedorNombre} de Neumáticos y Llantas del Pacífico. Te contacto por tu interés en ${product}. ¿En qué puedo ayudarte?`);
       
-      // Actualizar estado automáticamente
-      updateContactStatus('whatsapp');
+      // Construir URL de WhatsApp
+      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
       
-      // Abrir WhatsApp directamente en la aplicación del celular
-      window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+      // CORRECCIÓN PARA MÓVILES: Usar window.location.href en lugar de window.open
+      // Esto funciona mejor en dispositivos móviles
+      
+      // Ocultar el modal primero
+      hideModal('prospectDetailModal');
+      
+      // Pequeño delay para asegurar que el estado se guarde y el modal se cierre
+      setTimeout(() => {
+        // Abrir WhatsApp - funciona tanto en móviles como en escritorio
+        window.location.href = whatsappUrl;
+        
+        // Fallback para escritorio si window.location no funciona
+        setTimeout(() => {
+          // Si después de 500ms no se ha redirigido, intentar con window.open
+          if (document.visibilityState === 'visible') {
+            window.open(whatsappUrl, '_blank');
+          }
+        }, 500);
+      }, 100);
     }
 
     function callProspect() {
       const phone = document.getElementById('detailProspectPhone').textContent;
       const cleanPhone = phone.replace(/\D/g, '');
       
-      // Actualizar estado automáticamente
+      // Validar que el número tenga el formato correcto
+      if (!cleanPhone || cleanPhone.length < 9) {
+        alert('Número de teléfono inválido');
+        return;
+      }
+      
+      // Actualizar estado automáticamente ANTES de llamar
       updateContactStatus('llamada');
       
-      window.open(`tel:${cleanPhone}`, '_blank');
+      // Ocultar el modal primero
+      hideModal('prospectDetailModal');
+      
+      // CORRECCIÓN PARA MÓVILES: Usar window.location.href para el esquema tel:
+      // Esto funciona mejor en dispositivos móviles
+      const telUrl = `tel:${cleanPhone}`;
+      
+      // Pequeño delay para asegurar que el estado se guarde y el modal se cierre
+      setTimeout(() => {
+        // Llamar al prospecto - funciona en móviles
+        window.location.href = telUrl;
+        
+        // Fallback para escritorio
+        setTimeout(() => {
+          // Si estamos en escritorio, mostrar mensaje
+          if (document.visibilityState === 'visible') {
+            alert(`En un dispositivo móvil, esto iniciaría una llamada a: ${cleanPhone}`);
+          }
+        }, 500);
+      }, 100);
     }
 
     // ==================== FUNCIONES PARA CAMBIAR PANTALLAS ====================
