@@ -162,6 +162,15 @@
       border: 1px solid var(--border);
     }
     
+    .btn-info {
+      background: #3b82f6;
+      color: #ffffff;
+    }
+    
+    .btn-info:hover {
+      background: #2563eb;
+    }
+    
     .btn-container {
       display: flex;
       gap: 8px;
@@ -330,6 +339,84 @@
       border: 1px solid var(--border);
     }
     
+    /* ==================== ESTILOS PARA UPLOAD ==================== */
+    .file-upload-container {
+      margin: 16px 0;
+    }
+    
+    .file-input-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+      width: 100%;
+    }
+    
+    .file-input-wrapper input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+    
+    .file-input-button {
+      background: var(--accent);
+      color: #111111;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: block;
+      text-align: center;
+      transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .file-input-button:hover {
+      background: var(--accent-strong);
+      box-shadow: 0 4px 12px rgba(247, 198, 0, 0.4);
+    }
+    
+    .file-name {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    
+    .upload-preview {
+      max-height: 200px;
+      overflow-y: auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 12px;
+    }
+    
+    .upload-preview table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .upload-preview th {
+      text-align: left;
+      padding: 6px;
+      border-bottom: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 11px;
+    }
+    
+    .upload-preview td {
+      padding: 6px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
@@ -430,6 +517,9 @@
       <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
       <button class="btn btn-secondary" onclick="showExportModal()">Exportar Excel</button>
       <button class="btn btn-accent" onclick="showModifyModal()">Modificar Ventas</button>
+      <button class="btn btn-info" onclick="showUploadModal()" style="grid-column: span 2;">
+        📁 Subir Archivo CSV
+      </button>
     </div>
     
     <!-- ==================== NUEVO BOTÓN ==================== -->
@@ -546,6 +636,62 @@
       <button class="btn btn-accent" onclick="showMainScreen()" style="width: 100%;">
         ← Volver a la pantalla principal
       </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL SUBIR ARCHIVO (NUEVO) ==================== -->
+  <div id="uploadModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-title">📁 Subir Archivo CSV</div>
+      
+      <div style="margin: 16px 0;">
+        <p style="color: var(--muted); font-size: 13px; margin-bottom: 12px;">
+          Sube un archivo CSV con el siguiente formato:<br>
+          <strong>Fecha/Hora, Monto con IVA, Neto sin IVA, Comisión, Fecha, Mes</strong>
+        </p>
+        
+        <div class="file-upload-container">
+          <div class="file-input-wrapper">
+            <button class="file-input-button">📂 Seleccionar archivo CSV</button>
+            <input type="file" id="csvFile" accept=".csv,text/csv" onchange="handleFileSelect(event)">
+          </div>
+          <div id="fileName" class="file-name">No se ha seleccionado ningún archivo</div>
+        </div>
+        
+        <div id="filePreview" class="upload-preview" style="display: none;">
+          <h4 style="color: var(--accent); margin-bottom: 8px; font-size: 14px;">Vista previa (primeras 5 filas):</h4>
+          <table id="previewTable">
+            <thead>
+              <tr>
+                <th>Fecha/Hora</th>
+                <th>Monto IVA</th>
+                <th>Neto</th>
+                <th>Comisión</th>
+                <th>Fecha</th>
+                <th>Mes</th>
+              </tr>
+            </thead>
+            <tbody id="previewBody">
+            </tbody>
+          </table>
+        </div>
+        
+        <div id="uploadStats" style="margin-top: 12px; display: none;">
+          <div style="color: var(--accent); font-weight: 600; margin-bottom: 4px;">Resumen:</div>
+          <div style="font-size: 12px; color: var(--muted);">
+            • Total de registros: <span id="totalRecords">0</span><br>
+            • Registros nuevos: <span id="newRecords">0</span><br>
+            • Total a importar: <span id="importRecords">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn btn-accent" onclick="processCSVFile()" id="processBtn" disabled>
+          📥 Procesar Archivo
+        </button>
+        <button class="btn btn-secondary" onclick="hideModal('uploadModal')">✗ Cancelar</button>
+      </div>
     </div>
   </div>
 
@@ -667,12 +813,16 @@
     let dailyChartInstance = null;
     let monthlyChartInstance = null;
     let hourlyChartInstance = null;
+    
+    // Variables para el archivo CSV
+    let selectedFile = null;
+    let csvData = [];
 
     // ==================== FUNCIONES PARA CAMBIAR PANTALLAS ====================
     function showMainScreen() {
       document.getElementById('mainScreen').style.display = 'block';
       document.getElementById('analysisScreen').classList.remove('active');
-      refreshUI(); // Refrescar datos si hubo cambios
+      refreshUI();
     }
 
     function showAnalysisScreen() {
@@ -681,39 +831,324 @@
       calculateAndDisplayKPIs();
     }
 
+    // ==================== FUNCIONES PARA SUBIR ARCHIVOS CSV ====================
+    function showUploadModal() {
+      showModal('uploadModal');
+      resetUploadForm();
+    }
+
+    function resetUploadForm() {
+      document.getElementById('csvFile').value = '';
+      document.getElementById('fileName').textContent = 'No se ha seleccionado ningún archivo';
+      document.getElementById('filePreview').style.display = 'none';
+      document.getElementById('uploadStats').style.display = 'none';
+      document.getElementById('processBtn').disabled = true;
+      selectedFile = null;
+      csvData = [];
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        resetUploadForm();
+        return;
+      }
+
+      selectedFile = file;
+      document.getElementById('fileName').textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+      document.getElementById('processBtn').disabled = false;
+
+      // Leer y previsualizar el archivo
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = e.target.result;
+          csvData = parseCSV(content);
+          
+          if (csvData.length === 0) {
+            alert('El archivo CSV está vacío o no tiene el formato correcto.');
+            resetUploadForm();
+            return;
+          }
+
+          // Mostrar vista previa
+          showPreview(csvData);
+          showUploadStats(csvData);
+        } catch (error) {
+          alert('Error al leer el archivo CSV: ' + error.message);
+          resetUploadForm();
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    function parseCSV(content) {
+      const lines = content.split('\n').filter(line => line.trim() !== '');
+      
+      if (lines.length === 0) {
+        return [];
+      }
+
+      // Verificar si la primera línea es encabezado
+      const firstLine = lines[0].toLowerCase();
+      const hasHeader = firstLine.includes('fecha/hora') || firstLine.includes('monto') || firstLine.includes('comisión');
+      
+      const startIndex = hasHeader ? 1 : 0;
+      const data = [];
+
+      for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        // Manejar comillas y separadores
+        const cells = [];
+        let inQuotes = false;
+        let currentCell = '';
+        
+        for (let j = 0; j < line.length; j++) {
+          const char = line[j];
+          
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            cells.push(currentCell);
+            currentCell = '';
+          } else {
+            currentCell += char;
+          }
+        }
+        cells.push(currentCell);
+        
+        // Limpiar comillas y espacios
+        const cleanCells = cells.map(cell => cell.replace(/"/g, '').trim());
+        
+        if (cleanCells.length >= 6) {
+          // Formato esperado: Fecha/Hora, Monto con IVA, Neto sin IVA, Comisión, Fecha, Mes
+          const [fechaHoraStr, montoConIVARaw, netoSinIVARaw, comisionRaw, fechaStr, mesStr] = cleanCells;
+          
+          // Convertir fechas
+          const timestamp = parseDateString(fechaHoraStr);
+          const dateIso = parseDateOnly(fechaStr);
+          const monthId = mesStr;
+          
+          // Convertir números
+          const montoConIVA = parseNumber(montoConIVARaw);
+          const netoSinIVA = parseNumber(netoSinIVARaw);
+          const comision = parseNumber(comisionRaw);
+          
+          if (timestamp && !isNaN(montoConIVA) && !isNaN(netoSinIVA) && !isNaN(comision) && dateIso && monthId) {
+            data.push({
+              fecha_hora: fechaHoraStr,
+              amount_with_vat: montoConIVA,
+              net_without_vat: netoSinIVA,
+              commission: comision,
+              fecha: fechaStr,
+              mes: mesStr,
+              // Datos convertidos para el sistema
+              timestamp: timestamp.toISOString(),
+              date_iso: dateIso,
+              month_id: monthId
+            });
+          }
+        }
+      }
+      
+      return data;
+    }
+
+    function parseDateString(dateStr) {
+      // Formato esperado: "05/12/25 10:18" (DD/MM/YY HH:MM)
+      const parts = dateStr.split(' ');
+      if (parts.length !== 2) return new Date();
+      
+      const datePart = parts[0]; // "05/12/25"
+      const timePart = parts[1]; // "10:18"
+      
+      const dateParts = datePart.split('/');
+      if (dateParts.length !== 3) return new Date();
+      
+      const day = parseInt(dateParts[0]);
+      const month = parseInt(dateParts[1]) - 1;
+      const year = 2000 + parseInt(dateParts[2]);
+      
+      const timeParts = timePart.split(':');
+      const hours = timeParts.length >= 1 ? parseInt(timeParts[0]) : 0;
+      const minutes = timeParts.length >= 2 ? parseInt(timeParts[1]) : 0;
+      
+      return new Date(year, month, day, hours, minutes);
+    }
+
+    function parseDateOnly(dateStr) {
+      // Formato esperado: "04/12/25" (DD/MM/YY)
+      const parts = dateStr.split('/');
+      if (parts.length !== 3) return '';
+      
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = '20' + parts[2];
+      
+      return `${year}-${month}-${day}`;
+    }
+
+    function parseNumber(numStr) {
+      // Eliminar puntos de miles y convertir decimales
+      const clean = numStr.replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    }
+
+    function showPreview(data) {
+      const previewBody = document.getElementById('previewBody');
+      previewBody.innerHTML = '';
+      
+      const previewCount = Math.min(5, data.length);
+      
+      for (let i = 0; i < previewCount; i++) {
+        const row = data[i];
+        const tr = document.createElement('tr');
+        
+        tr.innerHTML = `
+          <td>${row.fecha_hora || ''}</td>
+          <td>${formatCLP(row.amount_with_vat)}</td>
+          <td>${formatCLP(row.net_without_vat)}</td>
+          <td>${formatCLP(row.commission)}</td>
+          <td>${row.fecha || ''}</td>
+          <td>${row.mes || ''}</td>
+        `;
+        
+        previewBody.appendChild(tr);
+      }
+      
+      document.getElementById('filePreview').style.display = 'block';
+    }
+
+    function showUploadStats(data) {
+      const totalRecords = data.length;
+      const permanentSales = getStorage('ventas_permanentes');
+      
+      // Buscar duplicados (misma fecha/hora y mismo monto)
+      let newRecords = 0;
+      data.forEach(row => {
+        const isDuplicate = permanentSales.some(sale => 
+          sale.timestamp === row.timestamp && 
+          sale.amount_with_vat === row.amount_with_vat
+        );
+        if (!isDuplicate) newRecords++;
+      });
+      
+      document.getElementById('totalRecords').textContent = totalRecords;
+      document.getElementById('newRecords').textContent = newRecords;
+      document.getElementById('importRecords').textContent = newRecords;
+      
+      document.getElementById('uploadStats').style.display = 'block';
+    }
+
+    function processCSVFile() {
+      if (!selectedFile || csvData.length === 0) {
+        alert('No hay archivo para procesar.');
+        return;
+      }
+
+      const permanentSales = getStorage('ventas_permanentes');
+      const salesMonth = getStorage('ventas_mes');
+      const salesDay = getStorage('ventas_dia');
+      const today = getCurrentDate();
+      const currentMonth = getCurrentMonth();
+      
+      let addedToPermanent = 0;
+      let addedToMonth = 0;
+      let addedToDay = 0;
+      let duplicates = 0;
+
+      csvData.forEach(row => {
+        // Verificar si ya existe (duplicado)
+        const isDuplicate = permanentSales.some(sale => 
+          sale.timestamp === row.timestamp && 
+          sale.amount_with_vat === row.amount_with_vat
+        );
+
+        if (!isDuplicate) {
+          // Crear objeto de venta
+          const sale = {
+            amount_with_vat: row.amount_with_vat,
+            net_without_vat: row.net_without_vat,
+            commission: row.commission,
+            timestamp: row.timestamp,
+            date_iso: row.date_iso,
+            month_id: row.month_id
+          };
+
+          // Siempre agregar al historial permanente
+          permanentSales.push(sale);
+          addedToPermanent++;
+
+          // Agregar a ventas del mes si es del mes actual
+          if (row.month_id === currentMonth) {
+            salesMonth.push(sale);
+            addedToMonth++;
+          }
+
+          // Agregar a ventas del día si es del día actual
+          if (row.date_iso === today) {
+            salesDay.push(sale);
+            addedToDay++;
+          }
+        } else {
+          duplicates++;
+        }
+      });
+
+      // Guardar cambios
+      setStorage('ventas_permanentes', permanentSales);
+      setStorage('ventas_mes', salesMonth);
+      setStorage('ventas_dia', salesDay);
+
+      // Mostrar resumen
+      let message = `✅ Archivo procesado correctamente:\n\n`;
+      message += `• Registros en CSV: ${csvData.length}\n`;
+      message += `• Nuevos registros agregados: ${addedToPermanent}\n`;
+      message += `• Duplicados omitidos: ${duplicates}\n`;
+      
+      if (addedToMonth > 0) {
+        message += `• Agregados al mes actual: ${addedToMonth}\n`;
+      }
+      
+      if (addedToDay > 0) {
+        message += `• Agregados al día actual: ${addedToDay}\n`;
+      }
+
+      alert(message);
+      hideModal('uploadModal');
+      refreshUI();
+      showToast(`✅ ${addedToPermanent} ventas importadas correctamente`);
+    }
+
     // ==================== CÁLCULO DE KPIs ====================
     function calculateAndDisplayKPIs() {
       const permanentSales = getStorage('ventas_permanentes');
       const today = getCurrentDate();
       const currentMonth = getCurrentMonth();
       
-      // Obtener fecha de inicio de semana (lunes)
       const startOfWeek = getStartOfWeek();
       
-      // Filtrar ventas por período
       const daySales = permanentSales.filter(s => s.date_iso === today);
       const weekSales = permanentSales.filter(s => isDateInWeek(s.date_iso, startOfWeek));
       const monthSales = permanentSales.filter(s => s.month_id === currentMonth);
       
-      // Calcular KPIs para DÍA
       const dayTotal = daySales.reduce((sum, s) => sum + s.net_without_vat, 0);
       const dayCount = daySales.length;
       const dayAverage = dayCount > 0 ? dayTotal / dayCount : 0;
       const dayCommission = daySales.reduce((sum, s) => sum + s.commission, 0);
       
-      // Calcular KPIs para SEMANA
       const weekTotal = weekSales.reduce((sum, s) => sum + s.net_without_vat, 0);
       const weekCount = weekSales.length;
       const weekAverage = weekCount > 0 ? weekTotal / weekCount : 0;
       const weekCommission = weekSales.reduce((sum, s) => sum + s.commission, 0);
       
-      // Calcular KPIs para MES
       const monthTotal = monthSales.reduce((sum, s) => sum + s.net_without_vat, 0);
       const monthCount = monthSales.length;
       const monthAverage = monthCount > 0 ? monthTotal / monthCount : 0;
       const monthCommission = monthSales.reduce((sum, s) => sum + s.commission, 0);
       
-      // Actualizar UI con KPIs
       document.getElementById('kpiDayTotal').textContent = formatCLP(dayTotal);
       document.getElementById('kpiDayCount').textContent = dayCount;
       document.getElementById('kpiDayAverage').textContent = formatCLP(dayAverage);
@@ -729,15 +1164,14 @@
       document.getElementById('kpiMonthAverage').textContent = formatCLP(monthAverage);
       document.getElementById('kpiMonthCommission').textContent = formatCLP(monthCommission);
       
-      // Generar gráfico de ventas por hora
       renderHourlyChart(daySales);
     }
 
     // ==================== FUNCIONES AUXILIARES PARA KPIs ====================
     function getStartOfWeek() {
       const now = new Date();
-      const day = now.getDay(); // 0 = Domingo, 1 = Lunes, ...
-      const diff = day === 0 ? 6 : day - 1; // Diferencia hasta el lunes
+      const day = now.getDay();
+      const diff = day === 0 ? 6 : day - 1;
       const startOfWeek = new Date(now);
       startOfWeek.setDate(now.getDate() - diff);
       startOfWeek.setHours(0, 0, 0, 0);
@@ -748,13 +1182,12 @@
       const date = new Date(dateString);
       const start = new Date(startOfWeek);
       const end = new Date(start);
-      end.setDate(start.getDate() + 6); // 6 días después (domingo)
+      end.setDate(start.getDate() + 6);
       
       return date >= start && date <= end;
     }
 
     function renderHourlyChart(daySales) {
-      // Agrupar ventas por hora
       const hourlyData = {};
       daySales.forEach(sale => {
         const hour = new Date(sale.timestamp).getHours();
@@ -762,7 +1195,6 @@
         hourlyData[hourLabel] = (hourlyData[hourLabel] || 0) + sale.net_without_vat;
       });
       
-      // Ordenar horas
       const hours = Object.keys(hourlyData).sort((a, b) => {
         const hourA = parseInt(a.split(':')[0]);
         const hourB = parseInt(b.split(':')[0]);
@@ -771,7 +1203,6 @@
       
       const values = hours.map(hour => hourlyData[hour]);
       
-      // Si no hay datos, mostrar mensaje
       if (hours.length === 0) {
         hours.push('Sin datos');
         values.push(0);
@@ -836,7 +1267,6 @@
     }
 
     // ==================== FUNCIONES EXISTENTES (SIN CAMBIOS) ====================
-    // PWA Installation
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -855,7 +1285,6 @@
       }
     }
 
-    // Service Worker Registration
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register(createServiceWorkerBlob()).then(() => {
         console.log('Service Worker registrado');
@@ -884,7 +1313,6 @@
       return URL.createObjectURL(blob);
     }
 
-    // Manifest creation
     const manifest = {
       name: "Sistema de Comisiones",
       short_name: "Comisiones",
@@ -907,7 +1335,6 @@
     const manifestURL = URL.createObjectURL(manifestBlob);
     document.getElementById('manifest-placeholder').setAttribute('href', manifestURL);
 
-    // Storage functions with error handling
     function getStorage(key) {
       try {
         const data = localStorage.getItem(key);
@@ -995,17 +1422,14 @@
           month_id: getCurrentMonth()
         };
 
-        // Agregar a ventas permanentes
         const permanentSales = getStorage('ventas_permanentes');
         permanentSales.push(sale);
         setStorage('ventas_permanentes', permanentSales);
 
-        // Agregar a ventas del mes
         const salesMonth = getStorage('ventas_mes');
         salesMonth.push(sale);
         setStorage('ventas_mes', salesMonth);
 
-        // Agregar a ventas del día
         const salesDay = getStorage('ventas_dia');
         salesDay.push(sale);
         setStorage('ventas_dia', salesDay);
@@ -1035,7 +1459,6 @@
         return;
       }
       
-      // Eliminar del historial permanente
       const permanentSales = getStorage('ventas_permanentes');
       const permIndex = permanentSales.findIndex(s => 
         s.timestamp === lastSale.timestamp && 
@@ -1046,11 +1469,9 @@
         setStorage('ventas_permanentes', permanentSales);
       }
       
-      // Eliminar de ventas del día
       salesDay.pop();
       setStorage('ventas_dia', salesDay);
       
-      // Eliminar de ventas del mes
       const salesMonth = getStorage('ventas_mes');
       const monthIndex = salesMonth.findIndex(s => 
         s.timestamp === lastSale.timestamp && 
@@ -1837,16 +2258,13 @@
         });
       }
       
-      // Initial load
       refreshUI();
     });
 
-    // Enter key support
     document.getElementById('amountInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') addSale();
     });
 
-    // Real-time formatting as user types
     document.getElementById('amountInput').addEventListener('input', (e) => {
       let value = e.target.value.replace(/[^0-9]/g, '');
       if (value) {
