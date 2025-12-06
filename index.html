@@ -1060,7 +1060,7 @@
                style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
         
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Teléfono:</label>
-        <input type="text" id="prospectPhone" placeholder="Ej: +56912345678" inputmode="tel"
+        <input type="text" id="prospectPhone" placeholder="Ej: 947501990 (sin +56)" inputmode="tel"
                style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
         
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Producto(s):</label>
@@ -1455,7 +1455,7 @@
       // Limpiar número de teléfono (eliminar espacios, guiones, etc.)
       const cleanPhone = phone.replace(/\D/g, '');
       
-      // Validar que el número tenga el formato correcto
+      // Validar que el número tenga el formato correcto (9 dígitos para Chile)
       if (!cleanPhone || cleanPhone.length < 9) {
         alert('Número de teléfono inválido');
         return;
@@ -1467,11 +1467,11 @@
       // Mensaje predefinido que incluye nombre del cliente, vendedor y producto
       const message = encodeURIComponent(`Hola ${prospectName}, soy ${vendedorNombre} de Neumáticos y Llantas del Pacífico. Te contacto por tu interés en ${product}. ¿En qué puedo ayudarte?`);
       
-      // Construir URL de WhatsApp
-      const whatsappUrl = `https://wa.me/${cleanPhone}?text=${message}`;
+      // PARA WHATSAPP: Agregar el prefijo +56 al número (formato internacional)
+      const whatsappPhone = '+56' + cleanPhone;
       
-      // CORRECCIÓN PARA MÓVILES: Usar window.location.href en lugar de window.open
-      // Esto funciona mejor en dispositivos móviles
+      // Construir URL de WhatsApp
+      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${message}`;
       
       // Ocultar el modal primero
       hideModal('prospectDetailModal');
@@ -1493,6 +1493,7 @@
 
     function callProspect() {
       const phone = document.getElementById('detailProspectPhone').textContent;
+      // PARA LLAMADA: Usar el número sin prefijo internacional (formato local)
       const cleanPhone = phone.replace(/\D/g, '');
       
       // Validar que el número tenga el formato correcto
@@ -1509,6 +1510,7 @@
       
       // CORRECCIÓN PARA MÓVILES: Usar window.location.href para el esquema tel:
       // Esto funciona mejor en dispositivos móviles
+      // PARA LLAMADA: Usar el número sin +56 (formato local)
       const telUrl = `tel:${cleanPhone}`;
       
       // Pequeño delay para asegurar que el estado se guarde y el modal se cierre
