@@ -574,6 +574,21 @@
       color: white;
     }
     
+    .status-whatsapp {
+      background: #25D366;
+      color: white;
+    }
+    
+    .status-call {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .status-both {
+      background: linear-gradient(135deg, #25D366 0%, #3b82f6 100%);
+      color: white;
+    }
+    
     .observation-item {
       padding: 8px;
       border-bottom: 1px solid var(--border);
@@ -937,7 +952,9 @@
         <select id="filterStatus" style="min-width: 150px;" onchange="filterProspects()">
           <option value="">Todos los estados</option>
           <option value="Falta contactar">Falta contactar</option>
-          <option value="Contactado">Contactado</option>
+          <option value="Contactado por WhatsApp">Contactado por WhatsApp</option>
+          <option value="Contactado por llamada">Contactado por llamada</option>
+          <option value="Contactado por WhatsApp y Llamada">Contactado por WhatsApp y Llamada</option>
         </select>
         <select id="filterProduct" style="min-width: 150px;" onchange="filterProspects()">
           <option value="">Todos los productos</option>
@@ -1053,7 +1070,9 @@
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Estado:</label>
         <select id="prospectStatus" style="width: 100%; padding: 12px; background: var(--bg); color: var(--text); border: 2px solid var(--border); border-radius: 8px; margin-bottom: 12px;">
           <option value="Falta contactar">Falta contactar</option>
-          <option value="Contactado">Contactado</option>
+          <option value="Contactado por WhatsApp">Contactado por WhatsApp</option>
+          <option value="Contactado por llamada">Contactado por llamada</option>
+          <option value="Contactado por WhatsApp y Llamada">Contactado por WhatsApp y Llamada</option>
         </select>
         
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Observación inicial (opcional):</label>
@@ -1157,7 +1176,9 @@
             <div style="font-weight: 600; color: var(--accent);">📊 Estado:</div>
             <select id="detailProspectStatus" style="width: 100%; margin-top: 4px;">
               <option value="Falta contactar">Falta contactar</option>
-              <option value="Contactado">Contactado</option>
+              <option value="Contactado por WhatsApp">Contactado por WhatsApp</option>
+              <option value="Contactado por llamada">Contactado por llamada</option>
+              <option value="Contactado por WhatsApp y Llamada">Contactado por WhatsApp y Llamada</option>
             </select>
           </div>
           
@@ -1329,6 +1350,74 @@
     let selectedFile = null;
     let csvData = [];
 
+    // ==================== FUNCIONES PARA ACTUALIZACIÓN AUTOMÁTICA DE ESTADOS ====================
+    function updateContactStatus(contactType) {
+      if (!currentProspectId) return;
+      
+      const prospects = getProspectsStorage();
+      const index = prospects.findIndex(p => p.id === currentProspectId);
+      
+      if (index === -1) return;
+      
+      const currentStatus = prospects[index].estado;
+      let newStatus = currentStatus;
+      
+      // Lógica para actualizar el estado según el tipo de contacto
+      if (contactType === 'whatsapp') {
+        if (currentStatus === 'Falta contactar') {
+          newStatus = 'Contactado por WhatsApp';
+        } else if (currentStatus === 'Contactado por llamada') {
+          newStatus = 'Contactado por WhatsApp y Llamada';
+        } else if (currentStatus === 'Contactado por WhatsApp y Llamada') {
+          newStatus = 'Contactado por WhatsApp y Llamada'; // Ya tiene ambos
+        } else if (currentStatus === 'Contactado por WhatsApp') {
+          newStatus = 'Contactado por WhatsApp'; // Ya tiene WhatsApp
+        }
+      } else if (contactType === 'llamada') {
+        if (currentStatus === 'Falta contactar') {
+          newStatus = 'Contactado por llamada';
+        } else if (currentStatus === 'Contactado por WhatsApp') {
+          newStatus = 'Contactado por WhatsApp y Llamada';
+        } else if (currentStatus === 'Contactado por WhatsApp y Llamada') {
+          newStatus = 'Contactado por WhatsApp y Llamada'; // Ya tiene ambos
+        } else if (currentStatus === 'Contactado por llamada') {
+          newStatus = 'Contactado por llamada'; // Ya tiene llamada
+        }
+      }
+      
+      // Actualizar el estado solo si cambió
+      if (currentStatus !== newStatus) {
+        prospects[index].estado = newStatus;
+        prospects[index].fechaActualizacion = new Date().toISOString();
+        
+        // Agregar observación automática
+        const observationText = contactType === 'whatsapp' 
+          ? 'Contactado por WhatsApp' 
+          : 'Contactado por llamada telefónica';
+        
+        if (!prospects[index].observaciones) {
+          prospects[index].observaciones = [];
+        }
+        
+        prospects[index].observaciones.push({
+          fecha: new Date().toISOString(),
+          texto: observationText
+        });
+        
+        setProspectsStorage(prospects);
+        
+        // Actualizar la interfaz si el modal está abierto
+        if (document.getElementById('prospectDetailModal').classList.contains('active')) {
+          document.getElementById('detailProspectStatus').value = newStatus;
+        }
+        
+        // Mostrar notificación
+        showToast(`✅ Estado actualizado a: ${newStatus}`);
+      }
+      
+      return newStatus;
+    }
+
     // ==================== FUNCIONES PARA WHATSAPP Y NOMBRE VENDEDOR ====================
     function guardarNombreVendedor() {
       const nombreInput = document.getElementById('vendedorNombre');
@@ -1366,8 +1455,21 @@
       // Mensaje predefinido que incluye nombre del cliente, vendedor y producto
       const message = encodeURIComponent(`Hola ${prospectName}, soy ${vendedorNombre} de Neumáticos y Llantas del Pacífico. Te contacto por tu interés en ${product}. ¿En qué puedo ayudarte?`);
       
+      // Actualizar estado automáticamente
+      updateContactStatus('whatsapp');
+      
       // Abrir WhatsApp directamente en la aplicación del celular
       window.open(`https://wa.me/${cleanPhone}?text=${message}`, '_blank');
+    }
+
+    function callProspect() {
+      const phone = document.getElementById('detailProspectPhone').textContent;
+      const cleanPhone = phone.replace(/\D/g, '');
+      
+      // Actualizar estado automáticamente
+      updateContactStatus('llamada');
+      
+      window.open(`tel:${cleanPhone}`, '_blank');
     }
 
     // ==================== FUNCIONES PARA CAMBIAR PANTALLAS ====================
@@ -1391,11 +1493,10 @@
       document.getElementById('crmScreen').classList.add('active');
       loadProspects();
       updateProspectStats();
-      actualizarNombreVendedor(); // Actualizar el nombre del vendedor al mostrar CRM
+      actualizarNombreVendedor();
     }
 
     // ==================== FUNCIONES PARA PROSPECTOS ====================
-    // Variables para CRM
     let currentProspectId = null;
     let clientFileData = [];
     let clientFileHeaders = [];
@@ -1524,7 +1625,18 @@
         div.className = 'prospect-item';
         div.onclick = () => showProspectDetail(prospect.id);
         
-        const statusClass = prospect.estado === 'Contactado' ? 'status-contacted' : 'status-not-contacted';
+        // Determinar clase CSS según el estado
+        let statusClass = 'status-not-contacted';
+        if (prospect.estado === 'Contactado por WhatsApp') {
+          statusClass = 'status-whatsapp';
+        } else if (prospect.estado === 'Contactado por llamada') {
+          statusClass = 'status-call';
+        } else if (prospect.estado === 'Contactado por WhatsApp y Llamada') {
+          statusClass = 'status-both';
+        } else if (prospect.estado === 'Falta contactar') {
+          statusClass = 'status-not-contacted';
+        }
+        
         const lastObservation = prospect.observaciones.length > 0 
           ? prospect.observaciones[prospect.observaciones.length - 1].texto 
           : 'Sin observaciones';
@@ -1583,7 +1695,7 @@
       
       const total = prospects.length;
       const pending = prospects.filter(p => p.estado === 'Falta contactar').length;
-      const contacted = prospects.filter(p => p.estado === 'Contactado').length;
+      const contacted = prospects.filter(p => p.estado !== 'Falta contactar').length;
       const recent = prospects.filter(p => new Date(p.fechaCreacion) > sevenDaysAgo).length;
       
       document.getElementById('totalProspects').textContent = total;
@@ -1669,7 +1781,7 @@
       if (!prospects[index].etiquetas.includes(tag)) {
         prospects[index].etiquetas.push(tag);
         setProspectsStorage(prospects);
-        showProspectDetail(currentProspectId); // Recargar
+        showProspectDetail(currentProspectId);
         showToast(`🏷️ Etiqueta "${tag}" agregada`);
       }
     }
@@ -1703,7 +1815,7 @@
       
       setProspectsStorage(prospects);
       textarea.value = '';
-      showProspectDetail(currentProspectId); // Recargar
+      showProspectDetail(currentProspectId);
       showToast('✅ Observación agregada');
     }
 
@@ -1724,12 +1836,6 @@
       loadProspects();
       updateProspectStats();
       showToast('✅ Cambios guardados');
-    }
-
-    function callProspect() {
-      const phone = document.getElementById('detailProspectPhone').textContent;
-      const cleanPhone = phone.replace(/\D/g, '');
-      window.open(`tel:${cleanPhone}`, '_blank');
     }
 
     function confirmDeleteProspect() {
@@ -1848,7 +1954,8 @@
         }
         
         // Validar estado
-        if (row.Estado !== 'Falta contactar' && row.Estado !== 'Contactado') {
+        const validStatuses = ['Falta contactar', 'Contactado por WhatsApp', 'Contactado por llamada', 'Contactado por WhatsApp y Llamada'];
+        if (!validStatuses.includes(row.Estado)) {
           ignoredRows++;
           continue;
         }
