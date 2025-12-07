@@ -745,23 +745,57 @@
       flex: 1;
     }
     
-    /* ==================== BOTÓN INTERMITENTE ==================== */
+    /* ==================== BOTÓN INTERMITENTE MEJORADO ==================== */
     .btn-flashing {
       background: #dc2626;
       color: #ffffff;
       position: relative;
       overflow: hidden;
-      animation: flashing 1.5s infinite;
+      animation: flashing 0.7s infinite;
+      box-shadow: 0 0 10px rgba(220, 38, 38, 0.7);
     }
     
     .btn-flashing:hover {
       background: #b91c1c;
+      animation: flashing-fast 0.4s infinite;
     }
     
     @keyframes flashing {
-      0% { background-color: #dc2626; }
-      50% { background-color: #ef4444; }
-      100% { background-color: #dc2626; }
+      0% { 
+        background-color: #dc2626;
+        box-shadow: 0 0 10px rgba(220, 38, 38, 0.7);
+      }
+      50% { 
+        background-color: #ff0000;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.9);
+      }
+      100% { 
+        background-color: #dc2626;
+        box-shadow: 0 0 10px rgba(220, 38, 38, 0.7);
+      }
+    }
+    
+    @keyframes flashing-fast {
+      0% { 
+        background-color: #dc2626;
+        box-shadow: 0 0 15px rgba(220, 38, 38, 0.8);
+      }
+      25% { 
+        background-color: #ff0000;
+        box-shadow: 0 0 25px rgba(255, 0, 0, 1);
+      }
+      50% { 
+        background-color: #dc2626;
+        box-shadow: 0 0 15px rgba(220, 38, 38, 0.8);
+      }
+      75% { 
+        background-color: #ff0000;
+        box-shadow: 0 0 25px rgba(255, 0, 0, 1);
+      }
+      100% { 
+        background-color: #dc2626;
+        box-shadow: 0 0 15px rgba(220, 38, 38, 0.8);
+      }
     }
     
     @media (max-width: 768px) {
@@ -858,7 +892,7 @@
       🗑️ Eliminar Última Venta
     </button>
 
-    <!-- 3. ACCIONES -->
+    <!-- 3. ACCIONES - REORDENADO EN 2 COLUMNAS 4 FILAS -->
     <div class="section-title">⚙️ Acciones</div>
     <div class="actions-grid">
       <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
@@ -871,7 +905,7 @@
       <button class="btn btn-info" onclick="showCRMScreen()" style="grid-column: span 2;">
         👥 Gestión de Clientes/Trabajos
       </button>
-      <!-- BOTÓN INTERMITENTE PARA TRABAJOS EN CURSO -->
+      <!-- BOTÓN INTERMITENTE MEJORADO PARA TRABAJOS EN CURSO -->
       <button class="btn btn-flashing" onclick="showTrabajosScreen()" style="grid-column: span 2; font-weight: 700;">
         🔧 TRABAJOS EN CURSO
       </button>
@@ -1167,7 +1201,7 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL AGREGAR PROSPECTO ==================== -->
+  <!-- ==================== MODAL AGREGAR PROSPECTO - MODIFICADO CON ETIQUETAS ==================== -->
   <div id="addProspectModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
       <div class="modal-title">➕ Agregar Nuevo Prospecto</div>
@@ -1192,6 +1226,19 @@
           <option value="Contactado por llamada">Contactado por llamada</option>
           <option value="Contactado por WhatsApp y Llamada">Contactado por WhatsApp y Llamada</option>
         </select>
+        
+        <!-- NUEVAS ETIQUETAS RÁPIDAS -->
+        <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Etiquetas importantes:</label>
+        <div style="display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="prospectTagTrabajo" value="TRABAJO EN CURSO">
+            <span class="tag" style="background: #3b82f6; color: white;">🔧 TRABAJO EN CURSO</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="prospectTagCotizacion" value="COTIZACIÓN">
+            <span class="tag" style="background: #10b981; color: white;">💰 COTIZACIÓN</span>
+          </label>
+        </div>
         
         <label style="display: block; margin-bottom: 8px; color: var(--accent); font-weight: 600;">Observación inicial (opcional):</label>
         <textarea id="prospectObservation" placeholder="Notas importantes..." rows="3"
@@ -1311,7 +1358,7 @@
               <span class="tag" data-tag="Frío">❄️ Frío</span>
               <span class="tag" data-tag="Tibio">🌤️ Tibio</span>
               <span class="tag" data-tag="Caliente">🔥 Caliente</span>
-              <span class="tag" data-tag="Quiere cotización">💰 Cotización</span>
+              <span class="tag" data-tag="COTIZACIÓN">💰 Cotización</span>
               <span class="tag" data-tag="Agenda visita">📅 Visita</span>
               <span class="tag" data-tag="TRABAJO EN CURSO">🔧 EN TRABAJO</span>
             </div>
@@ -1479,8 +1526,11 @@
     
     function loadTrabajosEnCurso() {
       const prospects = getProspectsStorage();
+      // MODIFICADO: Solo mostrar trabajos en curso que NO estén contactados
       const trabajosEnCurso = prospects.filter(prospect => 
-        prospect.etiquetas && prospect.etiquetas.includes('TRABAJO EN CURSO')
+        prospect.etiquetas && 
+        prospect.etiquetas.includes('TRABAJO EN CURSO') &&
+        prospect.estado === 'Falta contactar'
       );
       
       const container = document.getElementById('trabajosList');
@@ -1504,19 +1554,6 @@
         // Determinar clase CSS según el estado
         let statusClass = 'status-not-contacted';
         let statusText = 'Falta contactar';
-        if (prospect.estado === 'Contactado por WhatsApp') {
-          statusClass = 'status-whatsapp';
-          statusText = 'Contactado por WhatsApp';
-        } else if (prospect.estado === 'Contactado por llamada') {
-          statusClass = 'status-call';
-          statusText = 'Contactado por llamada';
-        } else if (prospect.estado === 'Contactado por WhatsApp y Llamada') {
-          statusClass = 'status-both';
-          statusText = 'Contactado por ambos medios';
-        } else if (prospect.estado === 'Falta contactar') {
-          statusClass = 'status-not-contacted';
-          statusText = 'Falta contactar';
-        }
         
         trabajoDiv.innerHTML = `
           <div class="trabajo-header">
@@ -1709,6 +1746,14 @@
           
           // Mostrar notificación
           showToast(`✅ Estado actualizado a: ${newStatus}`);
+          
+          // MODIFICADO: Recargar las listas para que el contacto desaparezca
+          if (document.getElementById('crmScreen').classList.contains('active')) {
+            loadProspects();
+          }
+          if (document.getElementById('trabajosScreen').classList.contains('active')) {
+            loadTrabajosEnCurso();
+          }
         }
       }
       
@@ -1886,6 +1931,9 @@
       document.getElementById('prospectProduct').value = '';
       document.getElementById('prospectStatus').value = 'Falta contactar';
       document.getElementById('prospectObservation').value = '';
+      // Limpiar checkboxes
+      document.getElementById('prospectTagTrabajo').checked = false;
+      document.getElementById('prospectTagCotizacion').checked = false;
       showModal('addProspectModal');
     }
 
@@ -1895,6 +1943,15 @@
       const product = document.getElementById('prospectProduct').value.trim();
       const status = document.getElementById('prospectStatus').value;
       const observation = document.getElementById('prospectObservation').value.trim();
+      
+      // Obtener etiquetas seleccionadas
+      const etiquetas = [];
+      if (document.getElementById('prospectTagTrabajo').checked) {
+        etiquetas.push('TRABAJO EN CURSO');
+      }
+      if (document.getElementById('prospectTagCotizacion').checked) {
+        etiquetas.push('COTIZACIÓN');
+      }
       
       if (!name || !phone || !product) {
         alert('Por favor completa los campos obligatorios: Nombre, Teléfono y Producto.');
@@ -1916,7 +1973,7 @@
         telefono: phone,
         producto: product,
         estado: status,
-        etiquetas: [],
+        etiquetas: etiquetas,
         observaciones: [],
         fechaCreacion: new Date().toISOString(),
         fechaActualizacion: new Date().toISOString()
@@ -1942,20 +1999,24 @@
       const prospects = getProspectsStorage();
       const container = document.getElementById('prospectList');
       
-      if (prospects.length === 0) {
+      // MODIFICADO: Filtrar prospectos que NO tienen etiqueta "TRABAJO EN CURSO" y NO están contactados
+      let filteredProspects = prospects.filter(prospect => 
+        !(prospect.etiquetas && prospect.etiquetas.includes('TRABAJO EN CURSO')) &&
+        prospect.estado === 'Falta contactar'
+      );
+      
+      if (filteredProspects.length === 0) {
         container.innerHTML = '<div style="padding: 40px; text-align: center; color: var(--muted); font-style: italic;">No hay prospectos registrados.</div>';
         return;
       }
       
       // Actualizar lista de productos para filtro
-      updateProductFilter(prospects);
+      updateProductFilter(filteredProspects);
       
-      // Aplicar filtros
+      // Aplicar filtros adicionales
       const searchTerm = document.getElementById('searchProspect')?.value.toLowerCase() || '';
       const filterStatus = document.getElementById('filterStatus')?.value || '';
       const filterProduct = document.getElementById('filterProduct')?.value || '';
-      
-      let filteredProspects = prospects;
       
       if (searchTerm) {
         filteredProspects = filteredProspects.filter(p => 
@@ -1995,6 +2056,12 @@
           ? prospect.observaciones[prospect.observaciones.length - 1].texto 
           : 'Sin observaciones';
         
+        // Mostrar etiquetas si tiene
+        let etiquetasHTML = '';
+        if (prospect.etiquetas && prospect.etiquetas.length > 0) {
+          etiquetasHTML = `<span>🏷️ ${prospect.etiquetas.join(', ')}</span>`;
+        }
+        
         div.innerHTML = `
           <div class="prospect-info">
             <div class="prospect-name">${prospect.nombre}</div>
@@ -2002,6 +2069,7 @@
               <span>📞 ${prospect.telefono}</span>
               <span>📦 ${prospect.producto}</span>
               <span class="prospect-status ${statusClass}">${prospect.estado}</span>
+              ${etiquetasHTML}
               <span>📝 ${lastObservation.substring(0, 30)}${lastObservation.length > 30 ? '...' : ''}</span>
             </div>
           </div>
@@ -2047,10 +2115,15 @@
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      const total = prospects.length;
-      const pending = prospects.filter(p => p.estado === 'Falta contactar').length;
-      const contacted = prospects.filter(p => p.estado !== 'Falta contactar').length;
-      const recent = prospects.filter(p => new Date(p.fechaCreacion) > sevenDaysAgo).length;
+      // MODIFICADO: Contar solo prospectos que NO tienen etiqueta "TRABAJO EN CURSO"
+      const prospectosFiltrados = prospects.filter(p => 
+        !(p.etiquetas && p.etiquetas.includes('TRABAJO EN CURSO'))
+      );
+      
+      const total = prospectosFiltrados.length;
+      const pending = prospectosFiltrados.filter(p => p.estado === 'Falta contactar').length;
+      const contacted = prospectosFiltrados.filter(p => p.estado !== 'Falta contactar').length;
+      const recent = prospectosFiltrados.filter(p => new Date(p.fechaCreacion) > sevenDaysAgo).length;
       
       document.getElementById('totalProspects').textContent = total;
       document.getElementById('pendingProspects').textContent = pending;
@@ -2137,6 +2210,16 @@
         setProspectsStorage(prospects);
         showProspectDetail(currentProspectId);
         showToast(`🏷️ Etiqueta "${tag}" agregada`);
+        
+        // MODIFICADO: Si se agrega etiqueta "TRABAJO EN CURSO", recargar listas
+        if (tag === 'TRABAJO EN CURSO') {
+          if (document.getElementById('crmScreen').classList.contains('active')) {
+            loadProspects();
+          }
+          if (document.getElementById('trabajosScreen').classList.contains('active')) {
+            loadTrabajosEnCurso();
+          }
+        }
       }
     }
 
@@ -2181,13 +2264,24 @@
       
       if (index === -1) return;
       
-      prospects[index].estado = document.getElementById('detailProspectStatus').value;
+      const oldEstado = prospects[index].estado;
+      const newEstado = document.getElementById('detailProspectStatus').value;
+      
+      prospects[index].estado = newEstado;
       prospects[index].proximoContacto = document.getElementById('detailProspectNextContact').value;
       prospects[index].fechaActualizacion = new Date().toISOString();
       
       setProspectsStorage(prospects);
       hideModal('prospectDetailModal');
-      loadProspects();
+      
+      // MODIFICADO: Recargar listas si el estado cambió a contactado
+      if (oldEstado === 'Falta contactar' && newEstado !== 'Falta contactar') {
+        loadProspects();
+        loadTrabajosEnCurso();
+      } else {
+        loadProspects();
+      }
+      
       updateProspectStats();
       showToast('✅ Cambios guardados');
     }
