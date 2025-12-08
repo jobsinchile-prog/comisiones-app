@@ -892,29 +892,24 @@
       🗑️ Eliminar Última Venta
     </button>
 
-    <!-- 3. ACCIONES - REORDENADO EN 2 COLUMNAS 4 FILAS -->
+    <!-- 3. ACCIONES - REORDENADO EN 4 FILAS Y 2 COLUMNAS -->
     <div class="section-title">⚙️ Acciones</div>
     <div class="actions-grid">
+      <!-- Fila 1 -->
       <button class="btn btn-danger" onclick="showCloseDayModal()">Cerrar Día</button>
       <button class="btn btn-danger" onclick="showCloseMonthModal()">Cerrar Mes</button>
-      <button class="btn btn-secondary" onclick="showExportModal()">Exportar Excel</button>
+      
+      <!-- Fila 2 -->
+      <button class="btn btn-accent" onclick="showAnalysisScreen()">Análisis de Ventas</button>
       <button class="btn btn-accent" onclick="showModifyModal()">Modificar Ventas</button>
-      <button class="btn btn-info" onclick="showUploadModal()" style="grid-column: span 2;">
-        📁 Subir Archivo CSV
-      </button>
-      <button class="btn btn-info" onclick="showCRMScreen()" style="grid-column: span 2;">
-        👥 Gestión de Clientes/Trabajos
-      </button>
-      <!-- BOTÓN INTERMITENTE MEJORADO PARA TRABAJOS EN CURSO -->
-      <button class="btn btn-flashing" onclick="showTrabajosScreen()" style="grid-column: span 2; font-weight: 700;">
-        🔧 TRABAJOS EN CURSO
-      </button>
-    </div>
-    
-    <div style="margin: 16px 0;">
-      <button class="btn btn-accent" onclick="showAnalysisScreen()" style="width: 100%;">
-        📈 Análisis de Ventas
-      </button>
+      
+      <!-- Fila 3 -->
+      <button class="btn btn-info" onclick="showCRMScreen()">Gestión de Clientes/Trabajos</button>
+      <button class="btn btn-flashing" onclick="showTrabajosScreen()">TRABAJOS EN CURSO</button>
+      
+      <!-- Fila 4 -->
+      <button class="btn btn-secondary" onclick="showExportModal()">Exportar Ventas</button>
+      <button class="btn btn-info" onclick="showUploadModal()">Subir Archivos Ventas</button>
     </div>
 
     <!-- 4. GRÁFICOS -->
@@ -1530,7 +1525,8 @@
       const trabajosEnCurso = prospects.filter(prospect => 
         prospect.etiquetas && 
         prospect.etiquetas.includes('TRABAJO EN CURSO') &&
-        prospect.estado === 'Falta contactar'
+        prospect.estado === 'Falta contactar' &&
+        !prospect.eliminadoTrabajos
       );
       
       const container = document.getElementById('trabajosList');
@@ -1570,11 +1566,30 @@
             <button class="btn btn-whatsapp" onclick="whatsappDesdeTrabajo('${prospect.id}', '${prospect.telefono}', '${prospect.nombre}')">
               💬 WhatsApp
             </button>
+            <button class="btn btn-danger" onclick="eliminarDeTrabajos('${prospect.id}')">
+              🗑️ Eliminar
+            </button>
           </div>
         `;
         
         container.appendChild(trabajoDiv);
       });
+    }
+    
+    function eliminarDeTrabajos(prospectId) {
+      if (!confirm('¿Está seguro de eliminar este trabajo de la lista de trabajos en curso?')) {
+        return;
+      }
+      
+      const prospects = getProspectsStorage();
+      const index = prospects.findIndex(p => p.id === prospectId);
+      
+      if (index === -1) return;
+      
+      prospects[index].eliminadoTrabajos = true;
+      setProspectsStorage(prospects);
+      loadTrabajosEnCurso();
+      showToast('🗑️ Trabajo eliminado de la lista');
     }
     
     function llamarDesdeTrabajo(prospectId, telefono) {
@@ -1903,7 +1918,15 @@
     function getProspectsStorage() {
       try {
         const data = localStorage.getItem('prospectos');
-        return data ? JSON.parse(data) : [];
+        const prospects = data ? JSON.parse(data) : [];
+        
+        // Inicializar campos para prospectos existentes
+        prospects.forEach(p => {
+          if (p.eliminadoCotizaciones === undefined) p.eliminadoCotizaciones = false;
+          if (p.eliminadoTrabajos === undefined) p.eliminadoTrabajos = false;
+        });
+        
+        return prospects;
       } catch (e) {
         console.error('Error leyendo prospectos:', e);
         return [];
@@ -1961,7 +1984,7 @@
       const prospects = getProspectsStorage();
       
       // Verificar si ya existe un prospecto con el mismo teléfono
-      const existingProspect = prospects.find(p => p.telefono === phone);
+      const existingProspect = prospects.find(p => p.telefono === phone && !p.eliminadoCotizaciones);
       if (existingProspect) {
         alert('Ya existe un prospecto con este número de teléfono.');
         return;
@@ -1974,6 +1997,8 @@
         producto: product,
         estado: status,
         etiquetas: etiquetas,
+        eliminadoCotizaciones: false,
+        eliminadoTrabajos: false,
         observaciones: [],
         fechaCreacion: new Date().toISOString(),
         fechaActualizacion: new Date().toISOString()
@@ -1999,10 +2024,9 @@
       const prospects = getProspectsStorage();
       const container = document.getElementById('prospectList');
       
-      // MODIFICADO: Filtrar prospectos que NO tienen etiqueta "TRABAJO EN CURSO" y NO están contactados
+      // MODIFICADO: Filtrar prospectos que NO están eliminados de cotizaciones
       let filteredProspects = prospects.filter(prospect => 
-        !(prospect.etiquetas && prospect.etiquetas.includes('TRABAJO EN CURSO')) &&
-        prospect.estado === 'Falta contactar'
+        !prospect.eliminadoCotizaciones
       );
       
       if (filteredProspects.length === 0) {
@@ -2115,9 +2139,9 @@
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       
-      // MODIFICADO: Contar solo prospectos que NO tienen etiqueta "TRABAJO EN CURSO"
+      // MODIFICADO: Contar solo prospectos que NO están eliminados de cotizaciones
       const prospectosFiltrados = prospects.filter(p => 
-        !(p.etiquetas && p.etiquetas.includes('TRABAJO EN CURSO'))
+        !p.eliminadoCotizaciones
       );
       
       const total = prospectosFiltrados.length;
@@ -2287,7 +2311,7 @@
     }
 
     function confirmDeleteProspect() {
-      if (!confirm('¿Está seguro de eliminar este prospecto y su historial? Esta acción no se puede deshacer.')) {
+      if (!confirm('¿Está seguro de eliminar este prospecto de la lista de cotizaciones?')) {
         return;
       }
       
@@ -2298,13 +2322,18 @@
       if (!currentProspectId) return;
       
       const prospects = getProspectsStorage();
-      const filtered = prospects.filter(p => p.id !== currentProspectId);
+      const index = prospects.findIndex(p => p.id === currentProspectId);
       
-      setProspectsStorage(filtered);
+      if (index === -1) return;
+      
+      // Solo marcar como eliminado de cotizaciones, no eliminar físicamente
+      prospects[index].eliminadoCotizaciones = true;
+      
+      setProspectsStorage(prospects);
       hideModal('prospectDetailModal');
       loadProspects();
       updateProspectStats();
-      showToast('🗑️ Prospecto eliminado');
+      showToast('🗑️ Prospecto eliminado de cotizaciones');
     }
 
     // ==================== FUNCIONES PARA IMPORTAR CLIENTES ====================
@@ -2420,7 +2449,7 @@
       // Calcular duplicados
       const existingProspects = getProspectsStorage();
       const duplicateRows = data.filter(row => 
-        existingProspects.some(p => p.telefono === row.Telefono)
+        existingProspects.some(p => p.telefono === row.Telefono && !p.eliminadoCotizaciones)
       ).length;
       
       showClientUploadStats(data.length, validRows, duplicateRows, ignoredRows);
@@ -2469,8 +2498,8 @@
       let ignored = 0;
       
       clientFileData.forEach(row => {
-        // Verificar duplicado por teléfono
-        const existingProspect = prospects.find(p => p.telefono === row.Telefono);
+        // Verificar duplicado por teléfono (solo si no está eliminado de cotizaciones)
+        const existingProspect = prospects.find(p => p.telefono === row.Telefono && !p.eliminadoCotizaciones);
         if (existingProspect) {
           duplicates++;
           return;
@@ -2489,6 +2518,8 @@
           producto: row.Producto,
           estado: row.Estado,
           etiquetas: row.Etiqueta ? [row.Etiqueta] : [],
+          eliminadoCotizaciones: false,
+          eliminadoTrabajos: false,
           proximoContacto: row.ProximoContacto || '',
           observaciones: [],
           fechaCreacion: new Date().toISOString(),
@@ -2525,14 +2556,17 @@
     function exportProspects() {
       const prospects = getProspectsStorage();
       
-      if (prospects.length === 0) {
+      // Filtrar solo los no eliminados de cotizaciones
+      const prospectosActivos = prospects.filter(p => !p.eliminadoCotizaciones);
+      
+      if (prospectosActivos.length === 0) {
         alert('No hay prospectos para exportar.');
         return;
       }
       
       let csv = 'NombreApellido,Telefono,Producto,Estado,Etiquetas,ProximoContacto,Observaciones,FechaCreacion\n';
       
-      prospects.forEach(p => {
+      prospectosActivos.forEach(p => {
         const etiquetas = p.etiquetas ? p.etiquetas.join(';') : '';
         const observaciones = p.observaciones ? p.observaciones.map(o => 
           `[${new Date(o.fecha).toLocaleString('es-CL')}] ${o.texto}`
@@ -2547,7 +2581,7 @@
       link.download = `prospectos_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
       
-      showToast(`📤 ${prospects.length} prospectos exportados`);
+      showToast(`📤 ${prospectosActivos.length} prospectos exportados`);
     }
 
     // ==================== FUNCIONES EXISTENTES (SIN CAMBIOS) ====================
